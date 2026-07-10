@@ -57,3 +57,23 @@ The `install.sh` script automatically configures this for you. If you wish to co
   }
 }
 ```
+
+## Update
+
+To update the statusline script to the latest version, simply run the installation command again (either remote one-liner or `./install.sh`). It will automatically fetch/overwrite the existing file with the latest version.
+
+## Uninstallation
+
+### 1. One-line Remote Uninstallation
+You can run the uninstaller directly from GitHub:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/uninstall.sh | bash
+```
+
+### 2. Local Uninstallation
+If you cloned the repository, run the uninstaller script:
+
+```bash
+./uninstall.sh
+```
