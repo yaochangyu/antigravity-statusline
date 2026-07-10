@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 CACHE_FILE = "/home/yao/.gemini/antigravity-cli/scratch/statusline_cache.json"
 LAST_STDIN = "/home/yao/.gemini/antigravity-cli/scratch/last_stdin.json"
+VERSION = "1.0.0"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
@@ -38,7 +39,7 @@ def update_cache():
                 month_cost = item.get("totalCost", 0.0)
                 break
 
-        # 讀取現有快取以保留 session_start_time
+        # 讀取現有快取以保留 session_start_time 及版本檢查狀態
         existing_cache = {}
         if os.path.exists(CACHE_FILE):
             try:
@@ -47,12 +48,40 @@ def update_cache():
             except:
                 pass
 
+        # 檢查更新 (每 24 小時一次)
+        now = time.time()
+        last_check = existing_cache.get("last_version_check", 0)
+        update_available = existing_cache.get("update_available", False)
+        
+        if now - last_check > 86400:
+            try:
+                import urllib.request
+                import re
+                req = urllib.request.Request(
+                    "https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/statusline.py",
+                    headers={'User-Agent': 'Mozilla/5.0'}
+                )
+                with urllib.request.urlopen(req, timeout=3) as response:
+                    remote_code = response.read().decode('utf-8')
+                    m = re.search(r'VERSION\s*=\s*["\']([^"\']+)["\']', remote_code)
+                    if m:
+                        remote_ver = m.group(1)
+                        if remote_ver != VERSION:
+                            update_available = True
+                        else:
+                            update_available = False
+                last_check = now
+            except Exception:
+                pass
+
         cache_data = {
             "today_cost": today_cost,
             "month_cost": month_cost,
             "session_id": existing_cache.get("session_id"),
             "session_start_time": existing_cache.get("session_start_time"),
-            "updated_at": time.time()
+            "last_version_check": last_check,
+            "update_available": update_available,
+            "updated_at": now
         }
         
         os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
@@ -335,7 +364,11 @@ def main():
     
     state_color = "31" if agent_state in ["working", "thinking"] else "37"
     f_state = f"\033[{state_color}m{agent_state}\033[0m"
+    
+    update_available = cache.get("update_available", False)
     f_session = f"\033[2msession:\033[0m\033[32m{session_mins}m\033[0m"
+    if update_available:
+        f_session += " \033[33;1m(🌟Update Available)\033[0m"
     
     line2 = f"  {f_model} \033[2m|\033[0m {f_5h} {f_wk} {f_today} {f_month} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
     

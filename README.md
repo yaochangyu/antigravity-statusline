@@ -60,6 +60,8 @@ The `install.sh` script automatically configures this for you. If you wish to co
 
 ## Update
 
+The script features a background, non-blocking check that runs every 24 hours. If a new version is available on GitHub, an indicator badge `(🌟Update Available)` will be displayed on your statusline next to the session duration.
+
 ### 1. One-line Remote Update
 You can update the statusline script directly from GitHub:
 
