@@ -34,3 +34,19 @@ cd antigravity-statusline
 chmod +x install.sh
 ./install.sh
 ```
+
+## 運作原理與配置
+
+預設情況下，`antigravity-cli` 會讀取 `~/.gemini/antigravity-cli/settings.json` 的設定檔。若要套用自訂的 statusline，必須在設定檔中的 `"statusLine"` 區塊配置執行路徑。
+
+本專案的 `install.sh` 安裝腳本會**自動為您修改此配置**。若您希望手動設定，請在您的 `settings.json` 中加入以下屬性：
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "python3 /home/yao/.gemini/antigravity-cli/scratch/statusline.py",
+    "enabled": true
+  }
+}
+```

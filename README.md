@@ -34,3 +34,19 @@ cd antigravity-statusline
 chmod +x install.sh
 ./install.sh
 ```
+
+## How It Works & Configuration
+
+By default, `antigravity-cli` reads its settings from `~/.gemini/antigravity-cli/settings.json`. To execute a custom statusline script, the `"statusLine"` block must be configured to point to `statusline.py`.
+
+The `install.sh` script automatically configures this for you. If you wish to configure it manually, add the following to your `settings.json`:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "python3 /home/yao/.gemini/antigravity-cli/scratch/statusline.py",
+    "enabled": true
+  }
+}
+```

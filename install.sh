@@ -43,5 +43,26 @@ else
     echo "Downloaded statusline.py to $TARGET_FILE."
 fi
 
+# 5. Configure settings.json in antigravity-cli
+SETTINGS_FILE="$HOME/.gemini/antigravity-cli/settings.json"
+echo "Configuring statusLine in $SETTINGS_FILE..."
+python3 -c "
+import json, os
+path = os.path.expanduser('~/.gemini/antigravity-cli/settings.json')
+os.makedirs(os.path.dirname(path), exist_ok=True)
+try:
+    with open(path, 'r') as f:
+        data = json.load(f)
+except Exception:
+    data = {}
+data['statusLine'] = {
+    'type': 'command',
+    'command': 'python3 ' + os.path.expanduser('~/.gemini/antigravity-cli/scratch/statusline.py'),
+    'enabled': True
+}
+with open(path, 'w') as f:
+    json.dump(data, f, indent=2)
+"
+
 echo -e "${GREEN}Installation successful!${NC}"
-echo "Statusline script is installed and ready to be used by antigravity-cli."
+echo "Statusline script is installed and configured in settings.json."
