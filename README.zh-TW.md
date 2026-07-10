@@ -26,7 +26,7 @@ curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/ma
 
 ### 2. 本地開發安裝（適用於開發者）
 
-如果您預計會自行客製化地位列腳本，並希望透過軟連結 (symlink) 自動同步，請 clone 本儲存庫並執行本地安裝：
+如果您預計會自行客製化地位列腳本，請 clone 本儲存庫並執行本地安裝（會直接將腳本複製到您的設定目錄中）：
 
 ```bash
 git clone https://github.com/yaochangyu/antigravity-statusline.git

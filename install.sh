@@ -25,10 +25,10 @@ TARGET_FILE="$TARGET_DIR/statusline.py"
 
 # 4. Install file
 if [ -f "$SCRIPT_SRC" ]; then
-    # Local installation: create symlink
-    echo "Creating symlink at $TARGET_FILE -> $SCRIPT_SRC..."
+    # Local installation: copy file
+    echo "Copying statusline.py to $TARGET_FILE..."
     rm -f "$TARGET_FILE"
-    ln -s "$SCRIPT_SRC" "$TARGET_FILE"
+    cp "$SCRIPT_SRC" "$TARGET_FILE"
 else
     # Standalone/remote installation: download the file directly
     echo "Local statusline.py not found. Downloading from GitHub..."

@@ -26,7 +26,7 @@ curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/ma
 
 ### 2. Local Installation (For Developers)
 
-If you plan to customize the statusline and want changes to sync via symlink, clone the repository and run the local installer:
+If you plan to customize the statusline, clone the repository and run the local installer (which copies the script to your configuration directory):
 
 ```bash
 git clone https://github.com/yaochangyu/antigravity-statusline.git
