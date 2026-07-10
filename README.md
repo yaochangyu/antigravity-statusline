@@ -1,5 +1,7 @@
 # Antigravity Statusline
 
+[English](README.md) | [繁體中文](README.zh-TW.md)
+
 A customizable Python statusline script for `antigravity-cli` (and Claude Code environments) that displays Git branch information, API rate limits, real-time spent costs, session duration, and active agent skills.
 
 ## Features
