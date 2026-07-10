@@ -14,23 +14,34 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# 2. Get script source path
-SCRIPT_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/statusline.py"
-
-if [ ! -f "$SCRIPT_SRC" ]; then
-    echo -e "${RED}Error: statusline.py not found in the current directory.${NC}"
-    exit 1
-fi
+# 2. Get script paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd || pwd)"
+SCRIPT_SRC="$SCRIPT_DIR/statusline.py"
 
 # 3. Create target scratch directory
 TARGET_DIR="$HOME/.gemini/antigravity-cli/scratch"
 mkdir -p "$TARGET_DIR"
+TARGET_FILE="$TARGET_DIR/statusline.py"
 
-# 4. Create symlink
-TARGET_LINK="$TARGET_DIR/statusline.py"
-echo "Creating symlink at $TARGET_LINK -> $SCRIPT_SRC..."
-rm -f "$TARGET_LINK"
-ln -s "$SCRIPT_SRC" "$TARGET_LINK"
+# 4. Install file
+if [ -f "$SCRIPT_SRC" ]; then
+    # Local installation: create symlink
+    echo "Creating symlink at $TARGET_FILE -> $SCRIPT_SRC..."
+    rm -f "$TARGET_FILE"
+    ln -s "$SCRIPT_SRC" "$TARGET_FILE"
+else
+    # Standalone/remote installation: download the file directly
+    echo "Local statusline.py not found. Downloading from GitHub..."
+    if command -v curl &> /dev/null; then
+        curl -sSL "https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/statusline.py" -o "$TARGET_FILE"
+    elif command -v wget &> /dev/null; then
+        wget -qO "$TARGET_FILE" "https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/statusline.py"
+    else
+        echo -e "${RED}Error: Neither curl nor wget is installed.${NC}"
+        exit 1
+    fi
+    echo "Downloaded statusline.py to $TARGET_FILE."
+fi
 
 echo -e "${GREEN}Installation successful!${NC}"
-echo "Statusline script is linked and ready to be used by antigravity-cli."
+echo "Statusline script is installed and ready to be used by antigravity-cli."

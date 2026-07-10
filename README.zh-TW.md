@@ -14,9 +14,21 @@
 
 ## 安裝步驟
 
-執行安裝腳本，將此專案目錄下的 `statusline.py` 軟連結 (symlink) 至作用中的 `.gemini` 設定目錄中：
+### 1. 遠端一鍵安裝（推薦）
+
+您無須 clone 本儲存庫，可以直接透過 `curl` 或 `wget` 執行 GitHub 上的安裝腳本，它會自動下載最新版的 `statusline.py`：
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.sh | bash
+```
+
+### 2. 本地開發安裝（適用於開發者）
+
+如果您預計會自行客製化地位列腳本，並希望透過軟連結 (symlink) 自動同步，請 clone 本儲存庫並執行本地安裝：
+
+```bash
+git clone https://github.com/yaochangyu/antigravity-statusline.git
+cd antigravity-statusline
 chmod +x install.sh
 ./install.sh
 ```

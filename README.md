@@ -14,9 +14,21 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 
 ## Installation
 
-Run the installation script to create a symlink from this directory to the active `.gemini` configurations directory:
+### 1. One-line Remote Installation (Recommended)
+
+You can run the installer directly from GitHub using `curl` or `wget` without cloning the repository:
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.sh | bash
+```
+
+### 2. Local Installation (For Developers)
+
+If you plan to customize the statusline and want changes to sync via symlink, clone the repository and run the local installer:
+
+```bash
+git clone https://github.com/yaochangyu/antigravity-statusline.git
+cd antigravity-statusline
 chmod +x install.sh
 ./install.sh
 ```
