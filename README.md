@@ -14,6 +14,13 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 - **Active Skills**: Dynamically parses the session transcript to show the currently running skill (e.g. `write-yaochangyu-style`).
 - **ANSI Colors**: Consistent visual color schemes matching premium dark/gray themes.
 
+## Prerequisites
+
+- **Python 3**: The statusline renderer requires Python 3. You can verify if it's installed by running `python3 --version`.
+  - On Ubuntu/Debian: `sudo apt update && sudo apt install -y python3`
+  - On macOS: `brew install python`
+  - On Windows (WSL): `sudo apt install python3`
+
 ## Installation
 
 ### 1. One-line Remote Installation (Recommended)

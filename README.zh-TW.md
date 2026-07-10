@@ -14,6 +14,13 @@
 - **真實技能偵測**：動態解析對話紀錄 (Transcript)，僅在載入真實技能（如 `write-yaochangyu-style`）時顯示。
 - **自訂 ANSI 配色**：與 premium 暗色/灰色主題一致的精緻終端機配色。
 
+## 系統需求與前置作業
+
+- **Python 3**：地位列渲染腳本需要 Python 3。您可以執行 `python3 --version` 來檢查系統是否已安裝。
+  - Ubuntu/Debian：`sudo apt update && sudo apt install -y python3`
+  - macOS：`brew install python`
+  - Windows (WSL)：`sudo apt install python3`
+
 ## 安裝步驟
 
 ### 1. 遠端一鍵安裝（推薦）
