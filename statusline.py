@@ -68,6 +68,25 @@ def update_cache():
                         remote_ver = m.group(1)
                         if remote_ver != VERSION:
                             update_available = True
+                            
+                            # 檢查 settings.json 中的 autoUpdate 設定
+                            auto_update = False
+                            try:
+                                settings_path = os.path.expanduser('~/.gemini/antigravity-cli/settings.json')
+                                if os.path.exists(settings_path):
+                                    with open(settings_path, 'r') as f_set:
+                                        settings_data = json.load(f_set)
+                                        auto_update = settings_data.get("statusLine", {}).get("autoUpdate", False)
+                            except Exception:
+                                pass
+                                
+                            if auto_update:
+                                script_path = os.path.abspath(__file__)
+                                # 若非軟連結才自動覆蓋，保護開發者工作區
+                                if not os.path.islink(script_path):
+                                    with open(script_path, "w", encoding="utf-8") as f_self:
+                                        f_self.write(remote_code)
+                                    update_available = False
                         else:
                             update_available = False
                 last_check = now
