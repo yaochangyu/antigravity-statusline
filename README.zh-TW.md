@@ -45,7 +45,7 @@ chmod +x install.sh
 {
   "statusLine": {
     "type": "command",
-    "command": "python3 /home/yao/.gemini/antigravity-cli/scratch/statusline.py",
+    "command": "python3 ~/.gemini/antigravity-cli/scratch/statusline.py",
     "enabled": true
   }
 }

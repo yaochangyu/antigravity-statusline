@@ -45,7 +45,7 @@ The `install.sh` script automatically configures this for you. If you wish to co
 {
   "statusLine": {
     "type": "command",
-    "command": "python3 /home/yao/.gemini/antigravity-cli/scratch/statusline.py",
+    "command": "python3 ~/.gemini/antigravity-cli/scratch/statusline.py",
     "enabled": true
   }
 }

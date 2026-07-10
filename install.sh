@@ -57,7 +57,7 @@ except Exception:
     data = {}
 data['statusLine'] = {
     'type': 'command',
-    'command': 'python3 ' + os.path.expanduser('~/.gemini/antigravity-cli/scratch/statusline.py'),
+    'command': 'python3 ~/.gemini/antigravity-cli/scratch/statusline.py',
     'enabled': True
 }
 with open(path, 'w') as f:
