@@ -60,7 +60,19 @@ The `install.sh` script automatically configures this for you. If you wish to co
 
 ## Update
 
-To update the statusline script to the latest version, simply run the installation command again (either remote one-liner or `./install.sh`). It will automatically fetch/overwrite the existing file with the latest version.
+### 1. One-line Remote Update
+You can update the statusline script directly from GitHub:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.sh | bash
+```
+
+### 2. Local Update
+If you cloned the repository, run the update script:
+
+```bash
+./update.sh
+```
 
 ## Uninstallation
 

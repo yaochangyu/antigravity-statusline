@@ -60,7 +60,19 @@ chmod +x install.sh
 
 ## 更新腳本
 
-若要更新地位列腳本至最新版本，只需再次執行安裝指令（不論是一鍵安裝指令或本地 `./install.sh` 腳本）即可。它會自動下載/覆蓋現有檔案，將其更新至最新版本。
+### 1. 遠端一鍵更新
+您可以直接從 GitHub 執行更新腳本：
+
+```bash
+curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.sh | bash
+```
+
+### 2. 本地更新
+如果您已將本儲存庫 clone 到本地，可以執行以下指令更新：
+
+```bash
+./update.sh
+```
 
 ## 解除安裝
 
