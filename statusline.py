@@ -1,0 +1,360 @@
+import sys
+import json
+import os
+import time
+import subprocess
+from datetime import datetime, timedelta
+
+CACHE_FILE = "/home/yao/.gemini/antigravity-cli/scratch/statusline_cache.json"
+LAST_STDIN = "/home/yao/.gemini/antigravity-cli/scratch/last_stdin.json"
+CACHE_TTL = 30  # 30 seconds
+EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
+
+def update_cache():
+    try:
+        # 1. 取得今日花費 (daily)
+        daily_res = subprocess.run(["npx", "ccusage", "daily", "--json"], capture_output=True, text=True, timeout=10)
+        daily_json = json.loads(daily_res.stdout) if daily_res.returncode == 0 else {}
+        daily_data = daily_json.get("daily", []) if isinstance(daily_json, dict) else []
+        
+        # 2. 取得本月花費 (monthly)
+        monthly_res = subprocess.run(["npx", "ccusage", "monthly", "--json"], capture_output=True, text=True, timeout=10)
+        monthly_json = json.loads(monthly_res.stdout) if monthly_res.returncode == 0 else {}
+        monthly_data = monthly_json.get("monthly", []) if isinstance(monthly_json, dict) else []
+
+        # 解析今日花費
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        today_cost = 0.0
+        for item in daily_data:
+            if isinstance(item, dict) and item.get("period") == today_str and item.get("agent") == "all":
+                today_cost = item.get("totalCost", 0.0)
+                break
+                
+        # 解析本月花費
+        month_str = datetime.now().strftime("%Y-%m")
+        month_cost = 0.0
+        for item in monthly_data:
+            if isinstance(item, dict) and item.get("period") == month_str and item.get("agent") == "all":
+                month_cost = item.get("totalCost", 0.0)
+                break
+
+        # 讀取現有快取以保留 session_start_time
+        existing_cache = {}
+        if os.path.exists(CACHE_FILE):
+            try:
+                with open(CACHE_FILE, "r") as f:
+                    existing_cache = json.load(f)
+            except:
+                pass
+
+        cache_data = {
+            "today_cost": today_cost,
+            "month_cost": month_cost,
+            "session_id": existing_cache.get("session_id"),
+            "session_start_time": existing_cache.get("session_start_time"),
+            "updated_at": time.time()
+        }
+        
+        os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
+        with open(CACHE_FILE, "w") as f:
+            json.dump(cache_data, f)
+            
+    except Exception as e:
+        error_log = "/home/yao/.gemini/antigravity-cli/scratch/statusline_update_error.txt"
+        with open(error_log, "w") as f:
+            f.write(str(e))
+
+def read_cache():
+    if not os.path.exists(CACHE_FILE):
+        return {}
+    try:
+        with open(CACHE_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def get_git_status_str(cwd):
+    if not cwd or not os.path.exists(cwd):
+        return ""
+    try:
+        # 分支名稱
+        branch_res = subprocess.run(
+            ["git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=1
+        )
+        if branch_res.returncode != 0:
+            return ""
+        branch = branch_res.stdout.strip()
+        
+        # 檢查 dirty 狀態
+        status_res = subprocess.run(
+            ["git", "-C", cwd, "status", "--porcelain"],
+            capture_output=True, text=True, timeout=1
+        )
+        dirty = "*" if (status_res.returncode == 0 and status_res.stdout.strip()) else ""
+        dirty_str = f"\033[31m*\033[0m" if dirty else ""
+        
+        # 檢查 ahead / behind
+        ahead_behind = ""
+        ab_res = subprocess.run(
+            ["git", "-C", cwd, "rev-list", "--count", "--left-right", "@{u}...HEAD"],
+            capture_output=True, text=True, timeout=1
+        )
+        if ab_res.returncode == 0:
+            parts = ab_res.stdout.strip().split()
+            if len(parts) == 2:
+                behind = int(parts[0])
+                ahead = int(parts[1])
+                ab_parts = []
+                if ahead > 0:
+                    ab_parts.append(f"\033[36m⇡{ahead}\033[0m")
+                if behind > 0:
+                    ab_parts.append(f"\033[31m⇣{behind}\033[0m")
+                if ab_parts:
+                    ahead_behind = " \033[2m|\033[0m " + " ".join(ab_parts)
+                    
+        return f"\033[2mbranch:\033[0m\033[36m{branch}\033[0m{dirty_str}{ahead_behind}"
+    except Exception:
+        pass
+    return ""
+
+def format_time(sec):
+    if sec <= 0:
+        return "0m"
+    days = sec // 86400
+    hours = (sec % 86400) // 3600
+    mins = (sec % 3600) // 60
+    
+    if days > 0:
+        return f"~{days}d{hours}h"
+    elif hours > 0:
+        return f"~{hours}h{mins}m"
+    else:
+        return f"~{mins}m"
+
+def make_colored_bar(fraction, width=8):
+    filled = int(round(fraction * width))
+    filled = max(0, min(width, filled))
+    empty = width - filled
+    
+    if fraction >= 1.0:
+        # 紅色 (RED)
+        bar = f"\033[31m" + "#" * filled + f"\033[0m"
+    else:
+        # 綠色 (GREEN)，未滿為灰色 (DIM)
+        bar = f"\033[32m" + "#" * filled + f"\033[0m\033[2m" + "-" * empty + f"\033[0m"
+        
+    return f"\033[2m[\033[0m{bar}\033[2m]\033[0m"
+
+def make_percentage_str(fraction):
+    pct = int(round(fraction * 100))
+    if fraction >= 1.0:
+        return f"\033[31m{pct}%\033[0m"
+    else:
+        return f"\033[32m{pct}%\033[0m"
+
+def parse_transcript(transcript_path):
+    tool_calls = 0
+    steps = 0
+    last_prompt = "none"
+    active_skill = None
+    
+    if transcript_path and not os.path.exists(transcript_path):
+        if "antigravity" in transcript_path and "antigravity-cli" not in transcript_path:
+            alt_path = transcript_path.replace("/antigravity/", "/antigravity-cli/")
+            if os.path.exists(alt_path):
+                transcript_path = alt_path
+                
+    if not transcript_path or not os.path.exists(transcript_path):
+        return tool_calls, steps, last_prompt, active_skill
+        
+    try:
+        with open(transcript_path, "r", errors="ignore") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                steps += 1
+                try:
+                    data = json.loads(line)
+                    t_calls = data.get("tool_calls", [])
+                    if isinstance(t_calls, list):
+                        tool_calls += len(t_calls)
+                        for tc in t_calls:
+                            if tc.get("name") == "view_file":
+                                args = tc.get("args", {})
+                                if args.get("IsSkillFile") is True or str(args.get("IsSkillFile")).lower() == "true":
+                                    path = args.get("AbsolutePath", "")
+                                    if path:
+                                        parts = path.replace("\\", "/").split("/")
+                                        if len(parts) >= 2:
+                                            active_skill = parts[-2]
+                    if data.get("type") == "USER_INPUT":
+                        content = data.get("content", "")
+                        if content:
+                            last_prompt = content.strip().replace("\n", " ")
+                            import re
+                            m = re.search(r"<SKILL>The user has explicitly invoked the \(([^)]+)\) skill", content)
+                            if m:
+                                active_skill = m.group(1)
+                except:
+                    pass
+    except Exception:
+        pass
+        
+    if last_prompt != "none":
+        import re
+        last_prompt = re.sub(r'<[^>]+>', '', last_prompt).strip()
+        
+    if len(last_prompt) > 15:
+        last_prompt = last_prompt[:15] + "..."
+    return tool_calls, steps, last_prompt, active_skill
+
+def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--update-cache":
+        update_cache()
+        return
+
+    # 1. 讀取 stdin
+    stdin_data = {}
+    try:
+        import select
+        if select.select([sys.stdin], [], [], 0.5)[0]:
+            raw_stdin = sys.stdin.read()
+            if raw_stdin.strip():
+                stdin_data = json.loads(raw_stdin)
+                with open(LAST_STDIN, "w") as f:
+                    json.dump(stdin_data, f, indent=2)
+    except Exception:
+        pass
+
+    # 2. 檢查與讀取快取
+    cache = read_cache()
+    need_update = False
+    
+    if not cache:
+        need_update = True
+        cache = {
+            "today_cost": 0.0,
+            "month_cost": 0.0,
+            "session_id": None,
+            "session_start_time": None
+        }
+    elif time.time() - cache.get("updated_at", 0) > CACHE_TTL:
+        need_update = True
+
+    # 處理 session 啟動時間
+    session_id = stdin_data.get("session_id", "default")
+    session_start_time = cache.get("session_start_time")
+    cached_session_id = cache.get("session_id")
+    
+    if not cached_session_id or cached_session_id != session_id or not session_start_time:
+        session_start_time = time.time()
+        cache["session_id"] = session_id
+        cache["session_start_time"] = session_start_time
+        try:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f)
+        except:
+            pass
+
+    if need_update:
+        script_path = os.path.abspath(__file__)
+        subprocess.Popen(["python3", script_path, "--update-cache"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    # 3. 取得各行內容
+    cwd = stdin_data.get("cwd") or os.getcwd()
+    
+    # --- 第一行 ---
+    line1 = get_git_status_str(cwd)
+    
+    # --- 第二行 ---
+    version = stdin_data.get("version", "4.15.2")
+    model_name = stdin_data.get("model", {}).get("display_name", "Unknown")
+    
+    # 決定使用哪組額度
+    model_id_lower = stdin_data.get("model", {}).get("id", "").lower()
+    is_gemini = "gemini" in model_id_lower
+    
+    quota = stdin_data.get("quota", {})
+    
+    # 5h 額度
+    q_5h_key = "gemini-5h" if is_gemini else "3p-5h"
+    q_5h = quota.get(q_5h_key, {})
+    rem_5h = q_5h.get("remaining_fraction", 1.0)
+    reset_5h = q_5h.get("reset_in_seconds", 0)
+    used_5h = 1.0 - rem_5h
+    bar_5h = make_colored_bar(used_5h, 8)
+    pct_5h_str = make_percentage_str(used_5h)
+    time_5h = format_time(reset_5h)
+    
+    # Weekly 額度
+    q_wk_key = "gemini-weekly" if is_gemini else "3p-weekly"
+    q_wk = quota.get(q_wk_key, {})
+    rem_wk = q_wk.get("remaining_fraction", 1.0)
+    reset_wk = q_wk.get("reset_in_seconds", 0)
+    used_wk = 1.0 - rem_wk
+    bar_wk = make_colored_bar(used_wk, 8)
+    pct_wk_str = make_percentage_str(used_wk)
+    time_wk = format_time(reset_wk)
+    
+    # 費用額度 (對應今日與本月累計花費)
+    today_cost = cache.get("today_cost", 0.0)
+    month_cost = cache.get("month_cost", 0.0)
+    
+    agent_state = stdin_data.get("agent_state", "idle")
+    session_mins = int((time.time() - session_start_time) // 60)
+    
+    # --- 第三行 ---
+    transcript_path = stdin_data.get("transcript_path", "")
+    tool_calls, steps, last_prompt, active_skill = parse_transcript(transcript_path)
+    
+    # Context 百分比
+    ctx_win = stdin_data.get("context_window", {})
+    ctx_pct_val = ctx_win.get("used_percentage", 0.0) / 100.0 if isinstance(ctx_win, dict) else 0.0
+    bar_ctx = make_colored_bar(ctx_pct_val, 10)
+    pct_ctx_str = make_percentage_str(ctx_pct_val)
+    
+    artifact_count = stdin_data.get("artifact_count", 0)
+    
+    # 格式化輸出，加上漂亮的 ANSI 顏色
+    # 第一行：已在 get_git_status_str 中上色
+    f_line1 = line1
+    
+    # 第二行：
+    # Version: 加粗 | Model: 灰色 + 藍色 | Quota: 灰色 + 進度條 | State: 紅色/白色 | Session: 灰色 + 綠色
+    # 這裡 5h 和 wk 的重置時間在有消耗時加上 * 號
+    star_5h = "*" if rem_5h < 1.0 else ""
+    star_wk = "*" if rem_wk < 1.0 else ""
+    star_extra = "*" if today_cost > 0 else ""
+    
+    f_model = f"\033[2mModel:\033[0m \033[36m{model_name}\033[0m"
+    f_5h = f"\033[2m5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
+    f_wk = f"\033[2mwk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
+    f_today = f"\033[2mtoday:\033[0m\033[32m${today_cost:.2f}\033[0m"
+    f_month = f"\033[2mmonth:\033[0m\033[32m${month_cost:.2f}\033[0m"
+    
+    state_color = "31" if agent_state in ["working", "thinking"] else "37"
+    f_state = f"\033[{state_color}m{agent_state}\033[0m"
+    f_session = f"\033[2msession:\033[0m\033[32m{session_mins}m\033[0m"
+    
+    line2 = f"  {f_model} \033[2m|\033[0m {f_5h} {f_wk} {f_today} {f_month} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
+    
+    # 第三行：
+    # Skill: 灰色 + 藍色 | Ctx: 灰色 + 進度條 | Stats: 灰色 + 洋紅色
+    f_ctx = f"\033[2mctx:\033[0m{bar_ctx}{pct_ctx_str}"
+    f_stats = f"\033[2mT:\033[0m\033[35m{tool_calls}\033[0m \033[2mA:\033[0m\033[35m{artifact_count}\033[0m \033[2mS:\033[0m\033[35m{steps}\033[0m"
+    
+    if active_skill:
+        f_skill = f"\033[2mskill:\033[0m\033[36m{active_skill}\033[0m"
+        line3 = f"  {f_skill} \033[2m|\033[0m {f_ctx} \033[2m|\033[0m {f_stats}"
+    else:
+        line3 = f"  {f_ctx} \033[2m|\033[0m {f_stats}"
+    
+    # 組合並列印三行 HUD
+    if f_line1:
+        print(f"{f_line1}\n{line2}\n{line3}")
+    else:
+        print(f"{line2}\n{line3}")
+
+if __name__ == "__main__":
+    main()
