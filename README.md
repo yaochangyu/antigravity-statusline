@@ -4,6 +4,8 @@
 
 A customizable Python statusline script for `antigravity-cli` (and Claude Code environments) that displays Git branch information, API rate limits, real-time spent costs, session duration, and active agent skills.
 
+![Antigravity Statusline Demo](demo.png)
+
 ## Features
 
 - **Git Status**: Displays the current branch, dirty status (`*`), and ahead/behind commits.
