@@ -315,6 +315,9 @@ def main():
     except Exception:
         pass
 
+    if not isinstance(stdin_data, dict):
+        stdin_data = {}
+
     # 2. 檢查與讀取快取
     cache = read_cache()
     need_update = False
@@ -356,20 +359,30 @@ def main():
     line1 = get_git_status_str(cwd)
     
     # --- 第二行 ---
-    version = stdin_data.get("version", "4.15.2")
-    model_name = stdin_data.get("model", {}).get("display_name", "Unknown")
+    version = stdin_data.get("version") or "4.15.2"
+    
+    model_data = stdin_data.get("model")
+    if not isinstance(model_data, dict):
+        model_data = {}
+    model_name = model_data.get("display_name") or "Unknown"
     
     # 決定使用哪組額度
-    model_id_lower = stdin_data.get("model", {}).get("id", "").lower()
+    model_id_lower = (model_data.get("id") or "").lower()
     is_gemini = "gemini" in model_id_lower
     
-    quota = stdin_data.get("quota", {})
+    quota = stdin_data.get("quota")
+    if not isinstance(quota, dict):
+        quota = {}
     
     # 5h 額度
     q_5h_key = "gemini-5h" if is_gemini else "3p-5h"
-    q_5h = quota.get(q_5h_key, {})
-    rem_5h = q_5h.get("remaining_fraction", 1.0)
-    reset_5h = q_5h.get("reset_in_seconds", 0)
+    q_5h = quota.get(q_5h_key)
+    if not isinstance(q_5h, dict):
+        q_5h = {}
+    rem_5h = q_5h.get("remaining_fraction")
+    if rem_5h is None:
+        rem_5h = 1.0
+    reset_5h = q_5h.get("reset_in_seconds") or 0
     used_5h = 1.0 - rem_5h
     bar_5h = make_colored_bar(used_5h, 8)
     pct_5h_str = make_percentage_str(used_5h)
@@ -377,9 +390,13 @@ def main():
     
     # Weekly 額度
     q_wk_key = "gemini-weekly" if is_gemini else "3p-weekly"
-    q_wk = quota.get(q_wk_key, {})
-    rem_wk = q_wk.get("remaining_fraction", 1.0)
-    reset_wk = q_wk.get("reset_in_seconds", 0)
+    q_wk = quota.get(q_wk_key)
+    if not isinstance(q_wk, dict):
+        q_wk = {}
+    rem_wk = q_wk.get("remaining_fraction")
+    if rem_wk is None:
+        rem_wk = 1.0
+    reset_wk = q_wk.get("reset_in_seconds") or 0
     used_wk = 1.0 - rem_wk
     bar_wk = make_colored_bar(used_wk, 8)
     pct_wk_str = make_percentage_str(used_wk)
@@ -389,16 +406,21 @@ def main():
     today_cost = cache.get("today_cost", 0.0)
     month_cost = cache.get("month_cost", 0.0)
     
-    agent_state = stdin_data.get("agent_state", "idle")
+    agent_state = stdin_data.get("agent_state") or "idle"
     session_mins = int((time.time() - session_start_time) // 60)
     
     # --- 第三行 ---
-    transcript_path = stdin_data.get("transcript_path", "")
+    transcript_path = stdin_data.get("transcript_path") or ""
     tool_calls, steps, last_prompt, active_skill = parse_transcript(transcript_path)
     
     # Context 百分比
-    ctx_win = stdin_data.get("context_window", {})
-    ctx_pct_val = ctx_win.get("used_percentage", 0.0) / 100.0 if isinstance(ctx_win, dict) else 0.0
+    ctx_win = stdin_data.get("context_window")
+    if not isinstance(ctx_win, dict):
+        ctx_win = {}
+    ctx_pct_val = ctx_win.get("used_percentage")
+    if ctx_pct_val is None:
+        ctx_pct_val = 0.0
+    ctx_pct_val = ctx_pct_val / 100.0
     bar_ctx = make_colored_bar(ctx_pct_val, 10)
     pct_ctx_str = make_percentage_str(ctx_pct_val)
     
