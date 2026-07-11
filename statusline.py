@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 CACHE_FILE = "/home/yao/.gemini/antigravity-cli/scratch/statusline_cache.json"
 LAST_STDIN = "/home/yao/.gemini/antigravity-cli/scratch/last_stdin.json"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
@@ -394,7 +394,7 @@ def main():
     # 第三行：
     # Skill: 灰色 + 藍色 | Ctx: 灰色 + 進度條 | Stats: 灰色 + 洋紅色
     f_ctx = f"\033[2mctx:\033[0m{bar_ctx}{pct_ctx_str}"
-    f_stats = f"\033[2mT:\033[0m\033[35m{tool_calls}\033[0m \033[2mA:\033[0m\033[35m{artifact_count}\033[0m \033[2mS:\033[0m\033[35m{steps}\033[0m"
+    f_stats = f"\033[2mTools:\033[0m\033[35m{tool_calls}\033[0m \033[2m| Artifacts:\033[0m\033[35m{artifact_count}\033[0m \033[2m| Steps:\033[0m\033[35m{steps}\033[0m"
     
     if active_skill:
         f_skill = f"\033[2mskill:\033[0m\033[36m{active_skill}\033[0m"
