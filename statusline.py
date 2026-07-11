@@ -16,13 +16,13 @@ EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 def update_cache():
     try:
         use_shell = (os.name == 'nt')
-        # 1. 取得今日花費 (daily)
-        daily_res = subprocess.run(["npx", "ccusage", "daily", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
+        # 1. 取得今日花費 (daily) - Use --no-install to skip network checks
+        daily_res = subprocess.run(["npx", "--no-install", "ccusage", "daily", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
         daily_json = json.loads(daily_res.stdout) if daily_res.returncode == 0 else {}
         daily_data = daily_json.get("daily", []) if isinstance(daily_json, dict) else []
         
-        # 2. 取得本月花費 (monthly)
-        monthly_res = subprocess.run(["npx", "ccusage", "monthly", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
+        # 2. 取得本月花費 (monthly) - Use --no-install to skip network checks
+        monthly_res = subprocess.run(["npx", "--no-install", "ccusage", "monthly", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
         monthly_json = json.loads(monthly_res.stdout) if monthly_res.returncode == 0 else {}
         monthly_data = monthly_json.get("monthly", []) if isinstance(monthly_json, dict) else []
 
@@ -128,42 +128,57 @@ def get_git_status_str(cwd):
     if not cwd or not os.path.exists(cwd):
         return ""
     try:
-        # 分支名稱
-        branch_res = subprocess.run(
-            ["git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD"],
-            capture_output=True, text=True, timeout=1
-        )
-        if branch_res.returncode != 0:
-            return ""
-        branch = branch_res.stdout.strip()
-        
-        # 檢查 dirty 狀態
+        use_shell = (os.name == 'nt')
+        # Optimized: run a single git status command to get branch, ahead/behind and dirty status in one process spawn
         status_res = subprocess.run(
-            ["git", "-C", cwd, "status", "--porcelain"],
-            capture_output=True, text=True, timeout=1
+            ["git", "-C", cwd, "status", "-b", "--porcelain"],
+            capture_output=True, text=True, timeout=1, shell=use_shell
         )
-        dirty = "*" if (status_res.returncode == 0 and status_res.stdout.strip()) else ""
+        if status_res.returncode != 0:
+            return ""
+            
+        lines = status_res.stdout.strip().splitlines()
+        if not lines:
+            return ""
+            
+        first_line = lines[0]
+        if not first_line.startswith("##"):
+            return ""
+            
+        status_part = first_line[2:].strip()
+        
+        ahead = 0
+        behind = 0
+        
+        import re
+        bracket_match = re.search(r'\[([^\]]+)\]', status_part)
+        if bracket_match:
+            bracket_content = bracket_match.group(1)
+            ahead_match = re.search(r'ahead (\d+)', bracket_content)
+            if ahead_match:
+                ahead = int(ahead_match.group(1))
+            behind_match = re.search(r'behind (\d+)', bracket_content)
+            if behind_match:
+                behind = int(behind_match.group(1))
+            status_part = status_part[:bracket_match.start()].strip()
+            
+        if "..." in status_part:
+            branch = status_part.split("...")[0].strip()
+        else:
+            branch = status_part
+            
+        dirty = "*" if len(lines) > 1 else ""
         dirty_str = f"\033[31m*\033[0m" if dirty else ""
         
-        # 檢查 ahead / behind
         ahead_behind = ""
-        ab_res = subprocess.run(
-            ["git", "-C", cwd, "rev-list", "--count", "--left-right", "@{u}...HEAD"],
-            capture_output=True, text=True, timeout=1
-        )
-        if ab_res.returncode == 0:
-            parts = ab_res.stdout.strip().split()
-            if len(parts) == 2:
-                behind = int(parts[0])
-                ahead = int(parts[1])
-                ab_parts = []
-                if ahead > 0:
-                    ab_parts.append(f"\033[36m⇡{ahead}\033[0m")
-                if behind > 0:
-                    ab_parts.append(f"\033[31m⇣{behind}\033[0m")
-                if ab_parts:
-                    ahead_behind = " \033[2m|\033[0m " + " ".join(ab_parts)
-                    
+        ab_parts = []
+        if ahead > 0:
+            ab_parts.append(f"\033[36m⇡{ahead}\033[0m")
+        if behind > 0:
+            ab_parts.append(f"\033[31m⇣{behind}\033[0m")
+        if ab_parts:
+            ahead_behind = " \033[2m|\033[0m " + " ".join(ab_parts)
+            
         return f"\033[2mbranch:\033[0m\033[36m{branch}\033[0m{dirty_str}{ahead_behind}"
     except Exception:
         pass
@@ -222,31 +237,43 @@ def parse_transcript(transcript_path):
         return tool_calls, steps, last_prompt, active_skill
         
     try:
+        import re
+        skill_re = re.compile(r"<SKILL>The user has explicitly invoked the \(([^)]+)\) skill")
+        html_re = re.compile(r'<[^>]+>')
+        
         with open(transcript_path, "r", errors="ignore") as f:
             for line in f:
-                if not line.strip():
+                if not line.startswith('{'):
                     continue
                 steps += 1
+                
+                # Fast pre-filtering: skip json.loads if the line does not contain keywords
+                has_tool_calls = "tool_calls" in line
+                has_user_input = "USER_INPUT" in line
+                if not (has_tool_calls or has_user_input):
+                    continue
+                    
                 try:
                     data = json.loads(line)
-                    t_calls = data.get("tool_calls", [])
-                    if isinstance(t_calls, list):
-                        tool_calls += len(t_calls)
-                        for tc in t_calls:
-                            if tc.get("name") == "view_file":
-                                args = tc.get("args", {})
-                                if args.get("IsSkillFile") is True or str(args.get("IsSkillFile")).lower() == "true":
-                                    path = args.get("AbsolutePath", "")
-                                    if path:
-                                        parts = path.replace("\\", "/").split("/")
-                                        if len(parts) >= 2:
-                                            active_skill = parts[-2]
-                    if data.get("type") == "USER_INPUT":
+                    if has_tool_calls:
+                        t_calls = data.get("tool_calls", [])
+                        if isinstance(t_calls, list):
+                            tool_calls += len(t_calls)
+                            for tc in t_calls:
+                                if tc.get("name") == "view_file":
+                                    args = tc.get("args", {})
+                                    if args.get("IsSkillFile") is True or str(args.get("IsSkillFile")).lower() == "true":
+                                        path = args.get("AbsolutePath", "")
+                                        if path:
+                                            parts = path.replace("\\", "/").split("/")
+                                            if len(parts) >= 2:
+                                                active_skill = parts[-2]
+                                                
+                    if has_user_input and data.get("type") == "USER_INPUT":
                         content = data.get("content", "")
                         if content:
                             last_prompt = content.strip().replace("\n", " ")
-                            import re
-                            m = re.search(r"<SKILL>The user has explicitly invoked the \(([^)]+)\) skill", content)
+                            m = skill_re.search(content)
                             if m:
                                 active_skill = m.group(1)
                 except:
@@ -255,8 +282,7 @@ def parse_transcript(transcript_path):
         pass
         
     if last_prompt != "none":
-        import re
-        last_prompt = re.sub(r'<[^>]+>', '', last_prompt).strip()
+        last_prompt = html_re.sub('', last_prompt).strip()
         
     if len(last_prompt) > 15:
         last_prompt = last_prompt[:15] + "..."
@@ -267,7 +293,7 @@ def main():
         update_cache()
         return
 
-    # 1. 讀取 stdin
+    # 1. 讀取 stdin (Optimized: non-blocking select on TTY)
     stdin_data = {}
     try:
         if not sys.stdin.isatty():
@@ -279,7 +305,8 @@ def main():
         else:
             if os.name != 'nt':
                 import select
-                if select.select([sys.stdin], [], [], 0.1)[0]:
+                # Use 0.0 timeout instead of 0.1 to avoid blocking when run interactively
+                if select.select([sys.stdin], [], [], 0.0)[0]:
                     raw_stdin = sys.stdin.read()
                     if raw_stdin.strip():
                         stdin_data = json.loads(raw_stdin)
@@ -378,15 +405,10 @@ def main():
     artifact_count = stdin_data.get("artifact_count", 0)
     
     # 格式化輸出，加上漂亮的 ANSI 顏色
-    # 第一行：已在 get_git_status_str 中上色
     f_line1 = line1
     
-    # 第二行：
-    # Version: 加粗 | Model: 灰色 + 藍色 | Quota: 灰色 + 進度條 | State: 紅色/白色 | Session: 灰色 + 綠色
-    # 這裡 5h 和 wk 的重置時間在有消耗時加上 * 號
     star_5h = "*" if rem_5h < 1.0 else ""
     star_wk = "*" if rem_wk < 1.0 else ""
-    star_extra = "*" if today_cost > 0 else ""
     
     f_model = f"\033[2mModel:\033[0m \033[36m{model_name}\033[0m"
     f_5h = f"\033[2m5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
@@ -404,8 +426,7 @@ def main():
     
     line2 = f"  {f_model} \033[2m|\033[0m {f_5h} {f_wk} {f_today} {f_month} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
     
-    # 第三行：
-    # Skill: 灰色 + 藍色 | Ctx: 灰色 + 進度條 | Stats: 灰色 + 洋紅色
+    # --- 第三行 ---
     f_ctx = f"\033[2mctx:\033[0m{bar_ctx}{pct_ctx_str}"
     f_stats = f"\033[2mTools:\033[0m\033[35m{tool_calls}\033[0m \033[2m| Artifacts:\033[0m\033[35m{artifact_count}\033[0m \033[2m| Steps:\033[0m\033[35m{steps}\033[0m"
     
@@ -415,7 +436,6 @@ def main():
     else:
         line3 = f"  {f_ctx} \033[2m|\033[0m {f_stats}"
     
-    # 組合並列印三行 HUD
     if f_line1:
         print(f"{f_line1}\n{line2}\n{line3}")
     else:
