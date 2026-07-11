@@ -23,7 +23,7 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 
 ## Installation
 
-### 1. One-line Remote Installation (Recommended)
+### 1. One-line Remote Installation (Recommended for Linux/macOS)
 
 You can run the installer directly from GitHub using `curl` or `wget` without cloning the repository:
 
@@ -31,15 +31,37 @@ You can run the installer directly from GitHub using `curl` or `wget` without cl
 curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.sh | bash
 ```
 
-### 2. Local Installation (For Developers)
+### 2. Windows / Cross-Platform Installation (Recommended for Windows)
 
-If you plan to customize the statusline, clone the repository and run the local installer (which copies the script to your configuration directory):
+If you are on Windows or prefer using Python directly:
 
+**Remote installation via PowerShell or Command Prompt:**
+```powershell
+python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.py').read())"
+```
+
+**Or download and run the installer locally:**
+```bash
+python install.py
+```
+
+### 3. Local Installation (For Developers)
+
+If you plan to customize the statusline, clone the repository and run the local installer:
+
+**On Linux/macOS:**
 ```bash
 git clone https://github.com/yaochangyu/antigravity-statusline.git
 cd antigravity-statusline
 chmod +x install.sh
 ./install.sh
+```
+
+**On Windows:**
+```powershell
+git clone https://github.com/yaochangyu/antigravity-statusline.git
+cd antigravity-statusline
+python install.py
 ```
 
 ## How It Works & Configuration
@@ -63,32 +85,38 @@ The `install.sh` script automatically configures this for you. If you wish to co
 
 The script features a background, non-blocking check that runs every 24 hours. If a new version is available on GitHub, an indicator badge `(🌟Update Available)` will be displayed on your statusline next to the session duration.
 
-### 1. One-line Remote Update
-You can update the statusline script directly from GitHub:
-
+### 1. Remote Update
+**On Linux/macOS:**
 ```bash
 curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.sh | bash
 ```
 
-### 2. Local Update
-If you cloned the repository, run the update script:
-
-```bash
-./update.sh
+**On Windows:**
+```powershell
+python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.py').read())"
 ```
+
+### 2. Local Update
+Run the update script in the cloned repository directory:
+
+*   **Linux/macOS:** `./update.sh`
+*   **Windows:** `python update.py`
 
 ## Uninstallation
 
-### 1. One-line Remote Uninstallation
-You can run the uninstaller directly from GitHub:
-
+### 1. Remote Uninstallation
+**On Linux/macOS:**
 ```bash
 curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/uninstall.sh | bash
 ```
 
-### 2. Local Uninstallation
-If you cloned the repository, run the uninstaller script:
-
-```bash
-./uninstall.sh
+**On Windows:**
+```powershell
+python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/uninstall.py').read())"
 ```
+
+### 2. Local Uninstallation
+Run the uninstaller script in the cloned repository directory:
+
+*   **Linux/macOS:** `./uninstall.sh`
+*   **Windows:** `python uninstall.py`

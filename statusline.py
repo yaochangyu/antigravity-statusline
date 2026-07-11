@@ -5,21 +5,24 @@ import time
 import subprocess
 from datetime import datetime, timedelta
 
-CACHE_FILE = "/home/yao/.gemini/antigravity-cli/scratch/statusline_cache.json"
-LAST_STDIN = "/home/yao/.gemini/antigravity-cli/scratch/last_stdin.json"
+HOME_DIR = os.path.expanduser("~")
+BASE_DIR = os.path.join(HOME_DIR, ".gemini", "antigravity-cli")
+CACHE_FILE = os.path.join(BASE_DIR, "scratch", "statusline_cache.json")
+LAST_STDIN = os.path.join(BASE_DIR, "scratch", "last_stdin.json")
 VERSION = "1.0.1"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
 def update_cache():
     try:
+        use_shell = (os.name == 'nt')
         # 1. 取得今日花費 (daily)
-        daily_res = subprocess.run(["npx", "ccusage", "daily", "--json"], capture_output=True, text=True, timeout=10)
+        daily_res = subprocess.run(["npx", "ccusage", "daily", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
         daily_json = json.loads(daily_res.stdout) if daily_res.returncode == 0 else {}
         daily_data = daily_json.get("daily", []) if isinstance(daily_json, dict) else []
         
         # 2. 取得本月花費 (monthly)
-        monthly_res = subprocess.run(["npx", "ccusage", "monthly", "--json"], capture_output=True, text=True, timeout=10)
+        monthly_res = subprocess.run(["npx", "ccusage", "monthly", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
         monthly_json = json.loads(monthly_res.stdout) if monthly_res.returncode == 0 else {}
         monthly_data = monthly_json.get("monthly", []) if isinstance(monthly_json, dict) else []
 
@@ -72,7 +75,7 @@ def update_cache():
                             # 檢查 settings.json 中的 autoUpdate 設定
                             auto_update = False
                             try:
-                                settings_path = os.path.expanduser('~/.gemini/antigravity-cli/settings.json')
+                                settings_path = os.path.join(BASE_DIR, "settings.json")
                                 if os.path.exists(settings_path):
                                     with open(settings_path, 'r') as f_set:
                                         settings_data = json.load(f_set)
@@ -108,7 +111,7 @@ def update_cache():
             json.dump(cache_data, f)
             
     except Exception as e:
-        error_log = "/home/yao/.gemini/antigravity-cli/scratch/statusline_update_error.txt"
+        error_log = os.path.join(BASE_DIR, "scratch", "statusline_update_error.txt")
         with open(error_log, "w") as f:
             f.write(str(e))
 
@@ -208,8 +211,10 @@ def parse_transcript(transcript_path):
     active_skill = None
     
     if transcript_path and not os.path.exists(transcript_path):
-        if "antigravity" in transcript_path and "antigravity-cli" not in transcript_path:
-            alt_path = transcript_path.replace("/antigravity/", "/antigravity-cli/")
+        norm_path = transcript_path.replace("\\", "/")
+        if "antigravity" in norm_path and "antigravity-cli" not in norm_path:
+            alt_norm = norm_path.replace("/antigravity/", "/antigravity-cli/")
+            alt_path = os.path.normpath(alt_norm)
             if os.path.exists(alt_path):
                 transcript_path = alt_path
                 
@@ -265,13 +270,21 @@ def main():
     # 1. 讀取 stdin
     stdin_data = {}
     try:
-        import select
-        if select.select([sys.stdin], [], [], 0.5)[0]:
+        if not sys.stdin.isatty():
             raw_stdin = sys.stdin.read()
             if raw_stdin.strip():
                 stdin_data = json.loads(raw_stdin)
                 with open(LAST_STDIN, "w") as f:
                     json.dump(stdin_data, f, indent=2)
+        else:
+            if os.name != 'nt':
+                import select
+                if select.select([sys.stdin], [], [], 0.1)[0]:
+                    raw_stdin = sys.stdin.read()
+                    if raw_stdin.strip():
+                        stdin_data = json.loads(raw_stdin)
+                        with open(LAST_STDIN, "w") as f:
+                            json.dump(stdin_data, f, indent=2)
     except Exception:
         pass
 
@@ -307,7 +320,7 @@ def main():
 
     if need_update:
         script_path = os.path.abspath(__file__)
-        subprocess.Popen(["python3", script_path, "--update-cache"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen([sys.executable, script_path, "--update-cache"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     # 3. 取得各行內容
     cwd = stdin_data.get("cwd") or os.getcwd()
