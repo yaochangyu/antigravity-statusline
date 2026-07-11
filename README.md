@@ -23,42 +23,19 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 
 ## Installation
 
-### 1. One-line Remote Installation (Recommended for Linux/macOS)
+### 1. Remote Installation (Recommended)
 
-You can run the installer directly from GitHub using `curl` or `wget` without cloning the repository:
+You can run the installer directly using Python without cloning the repository:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.sh | bash
-```
-
-### 2. Windows / Cross-Platform Installation (Recommended for Windows)
-
-If you are on Windows or prefer using Python directly:
-
-**Remote installation via PowerShell or Command Prompt:**
-```powershell
 python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.py').read())"
 ```
 
-**Or download and run the installer locally:**
-```bash
-python install.py
-```
-
-### 3. Local Installation (For Developers)
+### 2. Local Installation (For Developers)
 
 If you plan to customize the statusline, clone the repository and run the local installer:
 
-**On Linux/macOS:**
 ```bash
-git clone https://github.com/yaochangyu/antigravity-statusline.git
-cd antigravity-statusline
-chmod +x install.sh
-./install.sh
-```
-
-**On Windows:**
-```powershell
 git clone https://github.com/yaochangyu/antigravity-statusline.git
 cd antigravity-statusline
 python install.py
@@ -68,55 +45,53 @@ python install.py
 
 By default, `antigravity-cli` reads its settings from `~/.gemini/antigravity-cli/settings.json`. To execute a custom statusline script, the `"statusLine"` block must be configured to point to `statusline.py`.
 
-The `install.sh` script automatically configures this for you. If you wish to configure it manually, add the following to your `settings.json`. You can also enable automatic updates by adding `"autoUpdate": true` inside `"statusLine"` block (this will automatically overwrite the copy in config folder when a new version is detected, preserving symlinks for developers):
+The installation script automatically configures this for you. If you wish to configure it manually, add the following to your `settings.json`. You can also enable automatic updates by adding `"autoUpdate": true` inside `"statusLine"` block (this will automatically overwrite the copy in config folder when a new version is detected, preserving symlinks for developers):
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "python3 ~/.gemini/antigravity-cli/scratch/statusline.py",
+    "command": "python ~/.gemini/antigravity-cli/scratch/statusline.py",
     "enabled": true,
     "autoUpdate": true
   }
 }
 ```
 
+> [!NOTE]
+> On Unix/Linux/macOS systems, the installation script will configure the command to use `python3` instead of `python` to match the default platform command.
+
 ## Update
 
 The script features a background, non-blocking check that runs every 24 hours. If a new version is available on GitHub, an indicator badge `(🌟Update Available)` will be displayed on your statusline next to the session duration.
 
 ### 1. Remote Update
-**On Linux/macOS:**
-```bash
-curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.sh | bash
-```
+You can update the statusline script directly from GitHub:
 
-**On Windows:**
-```powershell
+```bash
 python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.py').read())"
 ```
 
 ### 2. Local Update
 Run the update script in the cloned repository directory:
 
-*   **Linux/macOS:** `./update.sh`
-*   **Windows:** `python update.py`
+```bash
+python update.py
+```
 
 ## Uninstallation
 
 ### 1. Remote Uninstallation
-**On Linux/macOS:**
-```bash
-curl -sSL https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/uninstall.sh | bash
-```
+You can run the uninstaller directly from GitHub:
 
-**On Windows:**
-```powershell
+```bash
 python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/uninstall.py').read())"
 ```
 
 ### 2. Local Uninstallation
 Run the uninstaller script in the cloned repository directory:
 
-*   **Linux/macOS:** `./uninstall.sh`
-*   **Windows:** `python uninstall.py`
+```bash
+python uninstall.py
+```
+
