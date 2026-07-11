@@ -23,6 +23,14 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 
 ## Installation
 
+### AI Agent Installation Prompt
+
+If you are using an AI coding assistant (like Antigravity or Claude Code), you can copy and paste the following prompt to let the agent do the installation for you:
+
+> Please install the antigravity-statusline repository for me by running this remote Python installer:
+> `python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.py').read())"`
+> After running, verify the statusLine settings in my `~/.gemini/antigravity-cli/settings.json` file.
+
 ### 1. Remote Installation (Recommended)
 
 You can run the installer directly using Python without cloning the repository:

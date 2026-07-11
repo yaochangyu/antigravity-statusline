@@ -23,6 +23,14 @@
 
 ## 安裝步驟
 
+### AI Agent 一鍵安裝提示詞 (Prompt)
+
+如果您正使用 AI 程式助理（如 Antigravity 或 Claude Code）來設定此專案，您可以直接將以下提示詞複製發送給它：
+
+> 請幫我安裝 antigravity-statusline 專案，執行以下遠端 Python 安裝腳本：
+> `python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/install.py').read())"`
+> 安裝完成後，請協助確認並檢查我電腦中的 `~/.gemini/antigravity-cli/settings.json` 設定檔是否已啟用 statusLine。
+
 ### 1. 遠端一鍵安裝（推薦）
 
 您無須 clone 本儲存庫，可以直接透過 Python 一鍵執行 GitHub 上的安裝腳本：
