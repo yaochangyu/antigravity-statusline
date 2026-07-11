@@ -9,11 +9,28 @@ HOME_DIR = os.path.expanduser("~")
 BASE_DIR = os.path.join(HOME_DIR, ".gemini", "antigravity-cli")
 CACHE_FILE = os.path.join(BASE_DIR, "scratch", "statusline_cache.json")
 LAST_STDIN = os.path.join(BASE_DIR, "scratch", "last_stdin.json")
+LOCK_FILE = os.path.join(BASE_DIR, "scratch", "statusline.lock")
 VERSION = "1.0.1"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
 def update_cache():
+    # 檢查並建立 Lock 檔，防止併發執行
+    if os.path.exists(LOCK_FILE):
+        try:
+            mtime = os.path.getmtime(LOCK_FILE)
+            if time.time() - mtime < 60:  # 60 秒內有鎖直接退出
+                return
+        except:
+            pass
+
+    try:
+        os.makedirs(os.path.dirname(LOCK_FILE), exist_ok=True)
+        with open(LOCK_FILE, "w") as f:
+            f.write(str(os.getpid()))
+    except:
+        pass
+
     try:
         use_shell = (os.name == 'nt')
         # 1. 取得今日花費 (daily) - Use --no-install to skip network checks
@@ -114,6 +131,13 @@ def update_cache():
         error_log = os.path.join(BASE_DIR, "scratch", "statusline_update_error.txt")
         with open(error_log, "w") as f:
             f.write(str(e))
+    finally:
+        # 清除 Lock 檔
+        try:
+            if os.path.exists(LOCK_FILE):
+                os.remove(LOCK_FILE)
+        except:
+            pass
 
 def read_cache():
     if not os.path.exists(CACHE_FILE):
@@ -315,9 +339,6 @@ def main():
     except Exception:
         pass
 
-    if not isinstance(stdin_data, dict):
-        stdin_data = {}
-
     # 2. 檢查與讀取快取
     cache = read_cache()
     need_update = False
@@ -349,6 +370,13 @@ def main():
             pass
 
     if need_update:
+        # 搶先更新快取中的 updated_at，防止 30 秒內其他調用重複觸發 update
+        cache["updated_at"] = time.time()
+        try:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f)
+        except:
+            pass
         script_path = os.path.abspath(__file__)
         subprocess.Popen([sys.executable, script_path, "--update-cache"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -359,30 +387,20 @@ def main():
     line1 = get_git_status_str(cwd)
     
     # --- 第二行 ---
-    version = stdin_data.get("version") or "4.15.2"
-    
-    model_data = stdin_data.get("model")
-    if not isinstance(model_data, dict):
-        model_data = {}
-    model_name = model_data.get("display_name") or "Unknown"
+    version = stdin_data.get("version", "4.15.2")
+    model_name = stdin_data.get("model", {}).get("display_name", "Unknown")
     
     # 決定使用哪組額度
-    model_id_lower = (model_data.get("id") or "").lower()
+    model_id_lower = stdin_data.get("model", {}).get("id", "").lower()
     is_gemini = "gemini" in model_id_lower
     
-    quota = stdin_data.get("quota")
-    if not isinstance(quota, dict):
-        quota = {}
+    quota = stdin_data.get("quota", {})
     
     # 5h 額度
     q_5h_key = "gemini-5h" if is_gemini else "3p-5h"
-    q_5h = quota.get(q_5h_key)
-    if not isinstance(q_5h, dict):
-        q_5h = {}
-    rem_5h = q_5h.get("remaining_fraction")
-    if rem_5h is None:
-        rem_5h = 1.0
-    reset_5h = q_5h.get("reset_in_seconds") or 0
+    q_5h = quota.get(q_5h_key, {})
+    rem_5h = q_5h.get("remaining_fraction", 1.0)
+    reset_5h = q_5h.get("reset_in_seconds", 0)
     used_5h = 1.0 - rem_5h
     bar_5h = make_colored_bar(used_5h, 8)
     pct_5h_str = make_percentage_str(used_5h)
@@ -390,13 +408,9 @@ def main():
     
     # Weekly 額度
     q_wk_key = "gemini-weekly" if is_gemini else "3p-weekly"
-    q_wk = quota.get(q_wk_key)
-    if not isinstance(q_wk, dict):
-        q_wk = {}
-    rem_wk = q_wk.get("remaining_fraction")
-    if rem_wk is None:
-        rem_wk = 1.0
-    reset_wk = q_wk.get("reset_in_seconds") or 0
+    q_wk = quota.get(q_wk_key, {})
+    rem_wk = q_wk.get("remaining_fraction", 1.0)
+    reset_wk = q_wk.get("reset_in_seconds", 0)
     used_wk = 1.0 - rem_wk
     bar_wk = make_colored_bar(used_wk, 8)
     pct_wk_str = make_percentage_str(used_wk)
@@ -406,21 +420,16 @@ def main():
     today_cost = cache.get("today_cost", 0.0)
     month_cost = cache.get("month_cost", 0.0)
     
-    agent_state = stdin_data.get("agent_state") or "idle"
+    agent_state = stdin_data.get("agent_state", "idle")
     session_mins = int((time.time() - session_start_time) // 60)
     
     # --- 第三行 ---
-    transcript_path = stdin_data.get("transcript_path") or ""
+    transcript_path = stdin_data.get("transcript_path", "")
     tool_calls, steps, last_prompt, active_skill = parse_transcript(transcript_path)
     
     # Context 百分比
-    ctx_win = stdin_data.get("context_window")
-    if not isinstance(ctx_win, dict):
-        ctx_win = {}
-    ctx_pct_val = ctx_win.get("used_percentage")
-    if ctx_pct_val is None:
-        ctx_pct_val = 0.0
-    ctx_pct_val = ctx_pct_val / 100.0
+    ctx_win = stdin_data.get("context_window", {})
+    ctx_pct_val = ctx_win.get("used_percentage", 0.0) / 100.0 if isinstance(ctx_win, dict) else 0.0
     bar_ctx = make_colored_bar(ctx_pct_val, 10)
     pct_ctx_str = make_percentage_str(ctx_pct_val)
     
