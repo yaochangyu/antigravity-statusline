@@ -6,8 +6,11 @@ import shutil
 def main():
     print("Updating Antigravity Statusline script to the latest version...")
     
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    src_file = os.path.join(script_dir, "statusline.py")
+    if '__file__' in globals():
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        src_file = os.path.join(script_dir, "statusline.py")
+    else:
+        src_file = ""
     
     home_dir = os.path.expanduser("~")
     target_file = os.path.join(home_dir, ".gemini", "antigravity-cli", "scratch", "statusline.py")
