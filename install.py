@@ -51,7 +51,12 @@ def main():
     python_cmd = "python" if os.name == 'nt' else "python3"
     
     # Use standard Unix/Windows path string in settings.json
-    command_str = f"{python_cmd} ~/.gemini/antigravity-cli/scratch/statusline.py"
+    if os.name == 'nt':
+        # Windows does not support ~ expansion in command strings, use absolute path with quotes
+        target_path_str = target_file.replace("\\", "/")
+        command_str = f'{python_cmd} "{target_path_str}"'
+    else:
+        command_str = f"{python_cmd} ~/.gemini/antigravity-cli/scratch/statusline.py"
     
     settings_data = {}
     if os.path.exists(settings_file):

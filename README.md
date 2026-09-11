@@ -67,7 +67,8 @@ The installation script automatically configures this for you. If you wish to co
 ```
 
 > [!NOTE]
-> On Unix/Linux/macOS systems, the installation script will configure the command to use `python3` instead of `python` to match the default platform command.
+> - On Unix/Linux/macOS systems, the installation script configures the command to use `python3` instead of `python` to match the default platform command.
+> - On Windows, `~` is not expanded in `settings.json`. The installation script automatically configures the absolute path wrapped in quotes (e.g., `python "C:/Users/<Username>/.gemini/antigravity-cli/scratch/statusline.py"`).
 
 ## Update
 

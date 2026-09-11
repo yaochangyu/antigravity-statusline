@@ -155,7 +155,7 @@ def get_git_status_str(cwd):
         use_shell = (os.name == 'nt')
         # Optimized: run a single git status command to get branch, ahead/behind and dirty status in one process spawn
         status_res = subprocess.run(
-            ["git", "-C", cwd, "status", "-b", "--porcelain"],
+            ["git", "--no-optional-locks", "-C", cwd, "status", "-b", "--porcelain"],
             capture_output=True, text=True, timeout=1, shell=use_shell
         )
         if status_res.returncode != 0:

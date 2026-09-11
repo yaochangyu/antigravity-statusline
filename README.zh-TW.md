@@ -67,7 +67,8 @@ python install.py
 ```
 
 > [!NOTE]
-> 在 Unix/Linux/macOS 系統上，安裝腳本會自動將指令配置為使用 `python3` 而非 `python`，以符合平台預設指令名稱。
+> - 在 Unix/Linux/macOS 系統上，安裝腳本會自動將指令配置為使用 `python3` 而非 `python`，以符合平台預設指令名稱。
+> - 在 Windows 系統上，`settings.json` 的指令不支援波浪號 `~` 路徑展開。安裝腳本會自動為您替換為包覆雙引號的絕對路徑（例如 `python "C:/Users/<Username>/.gemini/antigravity-cli/scratch/statusline.py"`）。
 
 ## 更新腳本
 
