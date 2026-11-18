@@ -222,23 +222,25 @@ def format_time(sec):
     else:
         return f"~{mins}m"
 
-def make_colored_bar(fraction, width=8):
+def make_colored_bar(fraction, width=8, is_remaining=False):
     filled = int(round(fraction * width))
     filled = max(0, min(width, filled))
     empty = width - filled
     
-    if fraction >= 1.0:
+    is_alert = (fraction <= 0.0) if is_remaining else (fraction >= 1.0)
+    if is_alert:
         # 紅色 (RED)
-        bar = f"\033[31m" + "#" * filled + f"\033[0m"
+        bar = f"\033[31m" + ("-" * empty if is_remaining else "#" * filled) + f"\033[0m"
     else:
         # 綠色 (GREEN)，未滿為灰色 (DIM)
         bar = f"\033[32m" + "#" * filled + f"\033[0m\033[2m" + "-" * empty + f"\033[0m"
         
     return f"\033[2m[\033[0m{bar}\033[2m]\033[0m"
 
-def make_percentage_str(fraction):
+def make_percentage_str(fraction, is_remaining=False):
     pct = int(round(fraction * 100))
-    if fraction >= 1.0:
+    is_alert = (fraction <= 0.0) if is_remaining else (fraction >= 1.0)
+    if is_alert:
         return f"\033[31m{pct}%\033[0m"
     else:
         return f"\033[32m{pct}%\033[0m"
@@ -387,33 +389,50 @@ def main():
     line1 = get_git_status_str(cwd)
     
     # --- 第二行 ---
-    version = stdin_data.get("version", "4.15.2")
-    model_name = stdin_data.get("model", {}).get("display_name", "Unknown")
+    version = stdin_data.get("version") or "4.15.2"
+    model_data = stdin_data.get("model")
+    if not isinstance(model_data, dict):
+        model_data = {}
+    model_name = model_data.get("display_name") or "Unknown"
     
     # 決定使用哪組額度
-    model_id_lower = stdin_data.get("model", {}).get("id", "").lower()
-    is_gemini = "gemini" in model_id_lower
+    model_id_lower = f"{model_data.get('id') or ''} {model_name}".lower()
+    is_argon = "argon" in model_id_lower
+    is_gemini = "gemini" in model_id_lower or is_argon
     
-    quota = stdin_data.get("quota", {})
+    quota = stdin_data.get("quota")
+    if not isinstance(quota, dict):
+        quota = {}
     
-    # 5h 額度
+    # 5h 額度 (顯示剩餘百分比)
     q_5h_key = "gemini-5h" if is_gemini else "3p-5h"
-    q_5h = quota.get(q_5h_key, {})
-    rem_5h = q_5h.get("remaining_fraction", 1.0)
-    reset_5h = q_5h.get("reset_in_seconds", 0)
-    used_5h = 1.0 - rem_5h
-    bar_5h = make_colored_bar(used_5h, 8)
-    pct_5h_str = make_percentage_str(used_5h)
+    q_5h = quota.get(q_5h_key)
+    if not isinstance(q_5h, dict):
+        q_5h = {}
+    rem_5h = q_5h.get("remaining_fraction")
+    if rem_5h is None:
+        rem_5h = 1.0
+    reset_5h = q_5h.get("reset_in_seconds") or 0
+    bar_5h = make_colored_bar(rem_5h, 8, is_remaining=True)
+    pct_5h_str = make_percentage_str(rem_5h, is_remaining=True)
     time_5h = format_time(reset_5h)
     
-    # Weekly 額度
-    q_wk_key = "gemini-weekly" if is_gemini else "3p-weekly"
-    q_wk = quota.get(q_wk_key, {})
-    rem_wk = q_wk.get("remaining_fraction", 1.0)
-    reset_wk = q_wk.get("reset_in_seconds", 0)
-    used_wk = 1.0 - rem_wk
-    bar_wk = make_colored_bar(used_wk, 8)
-    pct_wk_str = make_percentage_str(used_wk)
+    # Weekly 額度 (Argon 優先使用 gemini-argon-wtu-weekly，顯示剩餘百分比)
+    if is_argon:
+        q_wk_key = "gemini-argon-wtu-weekly" if "gemini-argon-wtu-weekly" in quota else "gemini-weekly"
+    elif is_gemini:
+        q_wk_key = "gemini-weekly"
+    else:
+        q_wk_key = "3p-weekly"
+    q_wk = quota.get(q_wk_key)
+    if not isinstance(q_wk, dict):
+        q_wk = {}
+    rem_wk = q_wk.get("remaining_fraction")
+    if rem_wk is None:
+        rem_wk = 1.0
+    reset_wk = q_wk.get("reset_in_seconds") or 0
+    bar_wk = make_colored_bar(rem_wk, 8, is_remaining=True)
+    pct_wk_str = make_percentage_str(rem_wk, is_remaining=True)
     time_wk = format_time(reset_wk)
     
     # 費用額度 (對應今日與本月累計花費)
