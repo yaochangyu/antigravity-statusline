@@ -9,7 +9,8 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 ## Features
 
 - **Git Status**: Displays the current branch, dirty status (`*`), and ahead/behind commits.
-- **Rate Limits**: Shows used quotas and resets for 5-hour and Weekly limits with custom progress bars.
+- **Model-Aware Rate Limits**: Shows remaining quotas (`%`) and reset countdowns for 5-hour and Weekly limits with color-coded progress bars (green when available, red on exhaustion).
+  - Automatically adapts labels based on the active model: distinguishes `argon-wk` and `gemini-5h` for Argon models (such as `Orchestrator (Argon)` or `Gemini 4 Argon`), and standard `5h` / `wk` for Gemini and 3P models.
 - **Cost Monitoring**: Shows today's and this month's cumulative API costs directly (no arbitrary limits).
 - **Active Skills**: Dynamically parses the session transcript to show the currently running skill (e.g. `write-yaochangyu-style`).
 - **ANSI Colors**: Consistent visual color schemes matching premium dark/gray themes.

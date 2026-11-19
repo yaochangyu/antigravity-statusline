@@ -10,7 +10,7 @@ BASE_DIR = os.path.join(HOME_DIR, ".gemini", "antigravity-cli")
 CACHE_FILE = os.path.join(BASE_DIR, "scratch", "statusline_cache.json")
 LAST_STDIN = os.path.join(BASE_DIR, "scratch", "last_stdin.json")
 LOCK_FILE = os.path.join(BASE_DIR, "scratch", "statusline.lock")
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
