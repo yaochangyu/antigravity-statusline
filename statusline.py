@@ -10,7 +10,7 @@ BASE_DIR = os.path.join(HOME_DIR, ".gemini", "antigravity-cli")
 CACHE_FILE = os.path.join(BASE_DIR, "scratch", "statusline_cache.json")
 LAST_STDIN = os.path.join(BASE_DIR, "scratch", "last_stdin.json")
 LOCK_FILE = os.path.join(BASE_DIR, "scratch", "statusline.lock")
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
@@ -395,8 +395,11 @@ def main():
     
     # 決定使用哪組額度
     model_id_lower = f"{model_data.get('id') or ''} {model_name}".lower()
-    is_argon = "argon" in model_id_lower
-    is_gemini = "gemini" in model_id_lower or is_argon
+    is_3p = any(k in model_id_lower for k in ("claude", "gpt", "openai", "anthropic"))
+    is_argon = (not is_3p) and ("argon" in model_id_lower)
+    is_gemini = (not is_3p) and (
+        is_argon or any(k in model_id_lower for k in ("gemini", "neon", "hydrogen", "carbon", "orchestrator"))
+    )
     
     quota = stdin_data.get("quota")
     if not isinstance(quota, dict):
