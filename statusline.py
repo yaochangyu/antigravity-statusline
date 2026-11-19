@@ -10,7 +10,7 @@ BASE_DIR = os.path.join(HOME_DIR, ".gemini", "antigravity-cli")
 CACHE_FILE = os.path.join(BASE_DIR, "scratch", "statusline_cache.json")
 LAST_STDIN = os.path.join(BASE_DIR, "scratch", "last_stdin.json")
 LOCK_FILE = os.path.join(BASE_DIR, "scratch", "statusline.lock")
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
@@ -222,25 +222,23 @@ def format_time(sec):
     else:
         return f"~{mins}m"
 
-def make_colored_bar(fraction, width=8, is_remaining=False):
+def make_colored_bar(fraction, width=8):
     filled = int(round(fraction * width))
     filled = max(0, min(width, filled))
     empty = width - filled
     
-    is_alert = (fraction <= 0.0) if is_remaining else (fraction >= 1.0)
-    if is_alert:
+    if fraction >= 1.0:
         # 紅色 (RED)
-        bar = f"\033[31m" + ("-" * empty if is_remaining else "#" * filled) + f"\033[0m"
+        bar = f"\033[31m" + "#" * filled + f"\033[0m"
     else:
         # 綠色 (GREEN)，未滿為灰色 (DIM)
         bar = f"\033[32m" + "#" * filled + f"\033[0m\033[2m" + "-" * empty + f"\033[0m"
         
     return f"\033[2m[\033[0m{bar}\033[2m]\033[0m"
 
-def make_percentage_str(fraction, is_remaining=False):
+def make_percentage_str(fraction):
     pct = int(round(fraction * 100))
-    is_alert = (fraction <= 0.0) if is_remaining else (fraction >= 1.0)
-    if is_alert:
+    if fraction >= 1.0:
         return f"\033[31m{pct}%\033[0m"
     else:
         return f"\033[32m{pct}%\033[0m"
@@ -404,7 +402,7 @@ def main():
     if not isinstance(quota, dict):
         quota = {}
     
-    # 5h 額度 (顯示剩餘百分比)
+    # 5h 額度
     q_5h_key = "gemini-5h" if is_gemini else "3p-5h"
     q_5h = quota.get(q_5h_key)
     if not isinstance(q_5h, dict):
@@ -413,11 +411,12 @@ def main():
     if rem_5h is None:
         rem_5h = 1.0
     reset_5h = q_5h.get("reset_in_seconds") or 0
-    bar_5h = make_colored_bar(rem_5h, 8, is_remaining=True)
-    pct_5h_str = make_percentage_str(rem_5h, is_remaining=True)
+    used_5h = 1.0 - rem_5h
+    bar_5h = make_colored_bar(used_5h, 8)
+    pct_5h_str = make_percentage_str(used_5h)
     time_5h = format_time(reset_5h)
     
-    # Weekly 額度 (Argon 優先使用 gemini-argon-wtu-weekly，顯示剩餘百分比)
+    # Weekly 額度 (Argon 優先使用 gemini-argon-wtu-weekly)
     if is_argon:
         q_wk_key = "gemini-argon-wtu-weekly" if "gemini-argon-wtu-weekly" in quota else "gemini-weekly"
     elif is_gemini:
@@ -431,8 +430,9 @@ def main():
     if rem_wk is None:
         rem_wk = 1.0
     reset_wk = q_wk.get("reset_in_seconds") or 0
-    bar_wk = make_colored_bar(rem_wk, 8, is_remaining=True)
-    pct_wk_str = make_percentage_str(rem_wk, is_remaining=True)
+    used_wk = 1.0 - rem_wk
+    bar_wk = make_colored_bar(used_wk, 8)
+    pct_wk_str = make_percentage_str(used_wk)
     time_wk = format_time(reset_wk)
     
     # 費用額度 (對應今日與本月累計花費)
