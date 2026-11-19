@@ -75,17 +75,31 @@ The installation script automatically configures this for you. If you wish to co
 
 The script features a background, non-blocking check that runs every 24 hours. If a new version is available on GitHub, an indicator badge `(🌟Update Available)` will be displayed on your statusline next to the session duration.
 
-### 1. Remote Update
-You can update the statusline script directly from GitHub:
+### 1. Upgrade from Older Versions / Remote Update (No git clone needed, Recommended)
+
+If you have an older version installed (before the `autoUpdate` mechanism was introduced), or do not wish to clone the repository, run the following one-line Python command directly. It downloads the latest `statusline.py` from GitHub and overwrites your local installation while keeping your existing `settings.json` intact:
 
 ```bash
 python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.py').read())"
 ```
 
-### 2. Local Update
-Run the update script in the cloned repository directory:
+> [!TIP]
+> - On Linux / macOS / WSL systems where the default command is `python3`, replace the beginning with `python3 -c ...`.
+> - To enable automatic background updates in the future, ensure `"autoUpdate": true` is added inside the `"statusLine"` block in your `settings.json`.
+
+### 2. AI Agent Update Prompt
+
+If you are using an AI coding assistant (like Antigravity or Claude Code), you can copy and paste the following prompt to let the agent update the statusline for you:
+
+> Please update antigravity-statusline to the latest version by running this remote Python update script:
+> `python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.py').read())"`
+> Also verify that `"autoUpdate": true` is enabled in my `~/.gemini/antigravity-cli/settings.json` file.
+
+### 3. Local Update (For Developers with a cloned repository)
+If you previously cloned the repository, simply pull the latest changes and run the updater:
 
 ```bash
+git pull origin main
 python update.py
 ```
 

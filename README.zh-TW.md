@@ -75,17 +75,31 @@ python install.py
 
 地位列腳本具備背景非阻塞式的自動檢查機制，每 24 小時會自動在背景偵測 GitHub 上是否有新版本。如果有可用更新，將在您的地位列 session 時間旁亮起 `(🌟Update Available)` 提示徽章。
 
-### 1. 遠端更新
-您可以直接從 GitHub 執行更新腳本：
+### 1. 舊版升級 / 遠端一鍵更新（無須 git clone，推薦）
+
+如果您先前已安裝過舊版本（當時尚未具備 `autoUpdate` 自動更新機制），或者不想 clone 儲存庫，可以直接執行以下單行 Python 指令。它會從 GitHub 下載最新版的 `statusline.py` 覆蓋本機安裝，並保留現有的 `settings.json` 配置：
 
 ```bash
 python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.py').read())"
 ```
 
-### 2. 本地更新
-在 clone 的儲存庫目錄中執行更新指令：
+> [!TIP]
+> - 在 Linux / macOS / WSL 環境中，若預設指令為 `python3`，請將開頭改為 `python3 -c ...`。
+> - 若希望未來自動接收更新，請確保 `~/.gemini/antigravity-cli/settings.json` 的 `"statusLine"` 區塊內已加入 `"autoUpdate": true`。
+
+### 2. AI Agent 一鍵更新提示詞 (Prompt)
+
+如果您正在使用 Antigravity 或 Claude Code 等 AI 助理，可以直接複製發送以下提示詞，讓 Agent 替您更新：
+
+> 請幫我更新 antigravity-statusline 到最新版，直接執行遠端更新腳本：
+> `python -c "import urllib.request; exec(urllib.request.urlopen('https://raw.githubusercontent.com/yaochangyu/antigravity-statusline/main/update.py').read())"`
+> 並確保我 `settings.json` 內的 `statusLine` 區塊已設定 `"autoUpdate": true`。
+
+### 3. 本地更新（適用於已有 clone 儲存庫的開發者）
+若您先前已 clone 本儲存庫，在目錄中拉取最新代碼並執行更新腳本即可：
 
 ```bash
+git pull origin main
 python update.py
 ```
 
