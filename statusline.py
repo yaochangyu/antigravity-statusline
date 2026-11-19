@@ -461,8 +461,12 @@ def main():
     star_wk = "*" if rem_wk < 1.0 else ""
     
     f_model = f"\033[2mModel:\033[0m \033[36m{model_name}\033[0m"
-    f_5h = f"\033[2m5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
-    f_wk = f"\033[2mwk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
+    if is_argon:
+        f_5h = f"\033[2mgemini-5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
+        f_wk = f"\033[2margon-wk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
+    else:
+        f_5h = f"\033[2m5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
+        f_wk = f"\033[2mwk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
     f_today = f"\033[2mtoday:\033[0m\033[32m${today_cost:.2f}\033[0m"
     f_month = f"\033[2mmonth:\033[0m\033[32m${month_cost:.2f}\033[0m"
     
