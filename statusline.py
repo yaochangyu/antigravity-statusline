@@ -10,7 +10,7 @@ BASE_DIR = os.path.join(HOME_DIR, ".gemini", "antigravity-cli")
 CACHE_FILE = os.path.join(BASE_DIR, "scratch", "statusline_cache.json")
 LAST_STDIN = os.path.join(BASE_DIR, "scratch", "last_stdin.json")
 LOCK_FILE = os.path.join(BASE_DIR, "scratch", "statusline.lock")
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
@@ -462,11 +462,12 @@ def main():
     
     f_model = f"\033[2mModel:\033[0m \033[36m{model_name}\033[0m"
     if is_argon:
-        f_5h = f"\033[2mgemini-5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
-        f_wk = f"\033[2margon-wk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
+        # Argon 沒有 5h 配額限制，僅顯示每週額度 (argon-wk)
+        f_quota = f"\033[2margon-wk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
     else:
         f_5h = f"\033[2m5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
         f_wk = f"\033[2mwk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
+        f_quota = f"{f_5h} {f_wk}"
     f_today = f"\033[2mtoday:\033[0m\033[32m${today_cost:.2f}\033[0m"
     f_month = f"\033[2mmonth:\033[0m\033[32m${month_cost:.2f}\033[0m"
     
@@ -478,7 +479,7 @@ def main():
     if update_available:
         f_session += " \033[33;1m(🌟Update Available)\033[0m"
     
-    line2 = f"  {f_model} \033[2m|\033[0m {f_5h} {f_wk} {f_today} {f_month} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
+    line2 = f"  {f_model} \033[2m|\033[0m {f_quota} {f_today} {f_month} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
     
     # --- 第三行 ---
     f_ctx = f"\033[2mctx:\033[0m{bar_ctx}{pct_ctx_str}"

@@ -10,7 +10,7 @@
 
 - **Git 狀態**：顯示當前分支、變動狀態 (`*`)，以及領先/落後 (ahead/behind) 的 commit 數量。
 - **智慧模型額度辨識**：以彩色進度條顯示 API 額度損耗使用量百分比（`%`）與重置倒數（與 Orca / Claude statusline 一致，額度用盡時轉為紅色警示）。
-  - 自動依當前模型切換配額標籤：使用 Argon 模型（如 `Orchestrator (Argon)`、`Gemini 4 Argon`）時精確標註為 `argon-wk`（專屬週額度損耗）與 `gemini-5h`（Gemini 共用 5 小時額度損耗）；使用一般 Gemini 或第三方模型則顯示 `5h` 與 `wk`。
+  - 自動依當前模型切換配額欄位：使用 Argon 模型（如 `Orchestrator (Argon)`、`Gemini 4 Argon`）時，因其無 5 小時配額限制，會自動隱藏 5h 項目並僅顯示每週額度 `argon-wk`；使用一般 Gemini 或第三方模型則顯示標準的 `5h` 與 `wk`。
 - **費用監控**：直接顯示今日與本月的 API 累計花費金額（不使用無謂的每日限制）。
 - **真實技能偵測**：動態解析對話紀錄 (Transcript)，僅在載入真實技能（如 `write-yaochangyu-style`）時顯示。
 - **自訂 ANSI 配色**：與 premium 暗色/灰色主題一致的精緻終端機配色。
