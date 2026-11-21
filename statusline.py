@@ -243,6 +243,17 @@ def make_percentage_str(fraction):
     else:
         return f"\033[32m{pct}%\033[0m"
 
+def format_tokens(n):
+    try:
+        n = int(n or 0)
+    except (TypeError, ValueError):
+        n = 0
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.1f}k"
+    return str(n)
+
 def parse_transcript(transcript_path):
     tool_calls = 0
     steps = 0
@@ -454,6 +465,11 @@ def main():
     ctx_pct_val = ctx_win.get("used_percentage", 0.0) / 100.0 if isinstance(ctx_win, dict) else 0.0
     bar_ctx = make_colored_bar(ctx_pct_val, 10)
     pct_ctx_str = make_percentage_str(ctx_pct_val)
+
+    # 當前 session 的 token 使用量 (輸入 ↑ / 輸出 ↓)
+    tok_in = format_tokens(ctx_win.get("total_input_tokens")) if isinstance(ctx_win, dict) else "0"
+    tok_out = format_tokens(ctx_win.get("total_output_tokens")) if isinstance(ctx_win, dict) else "0"
+    f_tokens = f"\033[2mtokens:\033[0m\033[33m↑{tok_in} ↓{tok_out}\033[0m"
     
     artifact_count = stdin_data.get("artifact_count", 0)
     
@@ -487,12 +503,12 @@ def main():
     # --- 第三行 ---
     f_ctx = f"\033[2mctx:\033[0m{bar_ctx}{pct_ctx_str}"
     f_stats = f"\033[2mTools:\033[0m\033[35m{tool_calls}\033[0m \033[2m| Artifacts:\033[0m\033[35m{artifact_count}\033[0m \033[2m| Steps:\033[0m\033[35m{steps}\033[0m"
-    
+
     if active_skill:
         f_skill = f"\033[2mskill:\033[0m\033[36m{active_skill}\033[0m"
-        line3 = f"  {f_skill} \033[2m|\033[0m {f_ctx} \033[2m|\033[0m {f_stats}"
+        line3 = f"  {f_skill} \033[2m|\033[0m {f_ctx} \033[2m|\033[0m {f_tokens} \033[2m|\033[0m {f_stats}"
     else:
-        line3 = f"  {f_ctx} \033[2m|\033[0m {f_stats}"
+        line3 = f"  {f_ctx} \033[2m|\033[0m {f_tokens} \033[2m|\033[0m {f_stats}"
     
     if f_line1:
         print(f"{f_line1}\n{line2}\n{line3}")
