@@ -14,6 +14,27 @@ VERSION = "1.0.5"
 CACHE_TTL = 30  # 30 seconds
 EXTRA_LIMIT = 20.00  # 預設額外限額為 $20.00 美元
 
+def get_ccusage_usage(kind, period):
+    """回傳 {"in": 輸入 token, "out": 輸出 token}；ccusage 失敗時回傳 None。
+
+    輸入 = inputTokens + cacheCreationTokens + cacheReadTokens，輸出 = outputTokens。
+    """
+    try:
+        res = subprocess.run(["npx", "--no-install", "ccusage", kind, "--json"],
+                             capture_output=True, text=True, timeout=10, shell=(os.name == 'nt'))
+        if res.returncode != 0:
+            return None
+        payload = json.loads(res.stdout)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    rows = payload.get(kind, []) if isinstance(payload, dict) else []
+    tin = tout = 0
+    for item in rows:
+        if isinstance(item, dict) and item.get("period") == period and item.get("agent") == "all":
+            tin += int(item.get("inputTokens", 0) or 0) + int(item.get("cacheCreationTokens", 0) or 0) + int(item.get("cacheReadTokens", 0) or 0)
+            tout += int(item.get("outputTokens", 0) or 0)
+    return {"in": tin, "out": tout}
+
 def update_cache():
     # 檢查並建立 Lock 檔，防止併發執行
     if os.path.exists(LOCK_FILE):
@@ -32,32 +53,10 @@ def update_cache():
         pass
 
     try:
-        use_shell = (os.name == 'nt')
-        # 1. 取得今日花費 (daily) - Use --no-install to skip network checks
-        daily_res = subprocess.run(["npx", "--no-install", "ccusage", "daily", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
-        daily_json = json.loads(daily_res.stdout) if daily_res.returncode == 0 else {}
-        daily_data = daily_json.get("daily", []) if isinstance(daily_json, dict) else []
-        
-        # 2. 取得本月花費 (monthly) - Use --no-install to skip network checks
-        monthly_res = subprocess.run(["npx", "--no-install", "ccusage", "monthly", "--json"], capture_output=True, text=True, timeout=10, shell=use_shell)
-        monthly_json = json.loads(monthly_res.stdout) if monthly_res.returncode == 0 else {}
-        monthly_data = monthly_json.get("monthly", []) if isinstance(monthly_json, dict) else []
-
-        # 解析今日花費
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        today_cost = 0.0
-        for item in daily_data:
-            if isinstance(item, dict) and item.get("period") == today_str and item.get("agent") == "all":
-                today_cost = item.get("totalCost", 0.0)
-                break
-                
-        # 解析本月花費
-        month_str = datetime.now().strftime("%Y-%m")
-        month_cost = 0.0
-        for item in monthly_data:
-            if isinstance(item, dict) and item.get("period") == month_str and item.get("agent") == "all":
-                month_cost = item.get("totalCost", 0.0)
-                break
+        # 1. 取得今日 / 本月 token 用量 (ccusage)；查詢失敗時為 None，statusline 會隱藏該欄位
+        now_dt = datetime.now()
+        today_usage = get_ccusage_usage("daily", now_dt.strftime("%Y-%m-%d"))
+        month_usage = get_ccusage_usage("monthly", now_dt.strftime("%Y-%m"))
 
         # 讀取現有快取以保留 session_start_time 及版本檢查狀態
         existing_cache = {}
@@ -114,8 +113,8 @@ def update_cache():
                 pass
 
         cache_data = {
-            "today_cost": today_cost,
-            "month_cost": month_cost,
+            "today_usage": today_usage,
+            "month_usage": month_usage,
             "session_id": existing_cache.get("session_id"),
             "session_start_time": existing_cache.get("session_start_time"),
             "last_version_check": last_check,
@@ -253,6 +252,12 @@ def format_tokens(n):
     if n >= 1_000:
         return f"{n / 1_000:.1f}k"
     return str(n)
+
+def f_usage(label, usage):
+    """today / month 的 token 用量；查不到資料時回傳空字串（隱藏）。"""
+    if not isinstance(usage, dict):
+        return ""
+    return f"\033[2m{label}:\033[0m\033[33m↑{format_tokens(usage.get('in'))} ↓{format_tokens(usage.get('out'))}\033[0m"
 
 def parse_transcript(transcript_path):
     tool_calls = 0
@@ -450,8 +455,8 @@ def main():
     time_wk = format_time(reset_wk)
     
     # 費用額度 (對應今日與本月累計花費)
-    today_cost = cache.get("today_cost", 0.0)
-    month_cost = cache.get("month_cost", 0.0)
+    today_usage = cache.get("today_usage")
+    month_usage = cache.get("month_usage")
     
     agent_state = stdin_data.get("agent_state", "idle")
     session_mins = int((time.time() - session_start_time) // 60)
@@ -487,8 +492,8 @@ def main():
         f_5h = f"\033[2m5h:\033[0m{bar_5h}{pct_5h_str}{star_5h}\033[2m({time_5h})\033[0m"
         f_wk = f"\033[2mwk:\033[0m{bar_wk}{pct_wk_str}{star_wk}\033[2m({time_wk})\033[0m"
         f_quota = f"{f_5h} {f_wk}"
-    f_today = f"\033[2mtoday:\033[0m\033[32m${today_cost:.2f}\033[0m"
-    f_month = f"\033[2mmonth:\033[0m\033[32m${month_cost:.2f}\033[0m"
+    f_today = f_usage("today", today_usage)
+    f_month = f_usage("month", month_usage)
     
     state_color = "31" if agent_state in ["working", "thinking"] else "37"
     f_state = f"\033[{state_color}m{agent_state}\033[0m"
@@ -498,7 +503,9 @@ def main():
     if update_available:
         f_session += " \033[33;1m(🌟Update Available)\033[0m"
     
-    line2 = f"  {f_model} \033[2m|\033[0m {f_quota} {f_today} {f_month} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
+    usage_part = " ".join(x for x in (f_today, f_month) if x)
+    usage_seg = f" {usage_part}" if usage_part else ""
+    line2 = f"  {f_model} \033[2m|\033[0m {f_quota}{usage_seg} \033[2m|\033[0m {f_state} \033[2m|\033[0m {f_session}"
     
     # --- 第三行 ---
     f_ctx = f"\033[2mctx:\033[0m{bar_ctx}{pct_ctx_str}"
