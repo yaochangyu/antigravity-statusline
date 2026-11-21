@@ -496,7 +496,15 @@ def main():
     f_today = f_usage("today", today_usage)
     f_month = f_usage("month", month_usage)
     
-    state_color = "31" if agent_state in ["working", "thinking"] else "37"
+    # 官方 agent_state 值：idle / working / tool_use / reviewing / authenticating / initializing / error
+    # （thinking 為舊版相容值）
+    state_colors = {
+        "working": "31", "thinking": "31", "tool_use": "31", "reviewing": "31",  # 執行中：紅
+        "error": "1;31",                                                       # 錯誤：粗體紅
+        "authenticating": "33", "initializing": "33",                         # 準備中：黃
+        "idle": "37",                                                          # 閒置：灰
+    }
+    state_color = state_colors.get(agent_state, "37")
     f_state = f"\033[{state_color}m{agent_state}\033[0m"
     
     update_available = cache.get("update_available", False)

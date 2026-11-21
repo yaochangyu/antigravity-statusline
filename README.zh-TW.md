@@ -14,7 +14,7 @@
 - **用量監控**：顯示今日與本月的 token 用量（`↑` 輸入含快取、`↓` 輸出），透過 `ccusage` 取得並在背景快取；`ccusage` 無法執行時隱藏。
 - **Session Token**：在 context 使用率旁顯示當前 Session 的輸入（`↑`）與輸出（`↓`）token。
 - **活動**：顯示工具呼叫數、Artifacts 數與步驟數（來自 Session 對話紀錄）。
-- **Session 與 Agent 狀態**：顯示 Session 持續的分鐘數，以及目前的 Agent 狀態（例如 `idle`、`working`）。
+- **Session 與 Agent 狀態**：顯示 Session 持續的分鐘數，以及目前的 Agent 狀態：`idle`、`working`、`tool_use`、`reviewing`、`authenticating`、`initializing` 或 `error`，依狀態上色。
 - **真實技能偵測**：動態解析對話紀錄 (Transcript)，僅在載入真實技能（如 `write-yaochangyu-style`）時顯示。
 - **用量需求**：`today` / `month` 需要能以 `npx --no-install ccusage` 執行 ccusage，否則隱藏該欄位。
 - **自訂 ANSI 配色**：與 premium 暗色/灰色主題一致的精緻終端機配色。

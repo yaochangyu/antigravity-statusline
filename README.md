@@ -14,7 +14,7 @@ A customizable Python statusline script for `antigravity-cli` (and Claude Code e
 - **Usage Monitoring**: Shows today's and this month's token usage (`↑` input including cache, `↓` output) from `ccusage`, cached in the background. Hidden when `ccusage` is unavailable.
 - **Session Tokens**: Shows the current session's input (`↑`) and output (`↓`) tokens next to the context usage bar.
 - **Activity**: Shows the tool call count, artifact count, and step count from the session transcript.
-- **Session & Agent State**: Shows the session duration in minutes and the current agent state (e.g. `idle`, `working`).
+- **Session & Agent State**: Shows the session duration in minutes and the current agent state: `idle`, `working`, `tool_use`, `reviewing`, `authenticating`, `initializing`, or `error`, colored by state.
 - **Active Skills**: Dynamically parses the session transcript to show the currently running skill (e.g. `write-yaochangyu-style`).
 - **Requirements for usage**: `today` / `month` need `ccusage` to be runnable with `npx --no-install ccusage`; without it they are hidden.
 - **ANSI Colors**: Consistent visual color schemes matching premium dark/gray themes.
