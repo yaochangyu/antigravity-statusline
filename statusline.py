@@ -479,7 +479,7 @@ def main():
     artifact_count = stdin_data.get("artifact_count", 0)
     
     # 格式化輸出，加上漂亮的 ANSI 顏色
-    dir_name = os.path.basename(os.path.normpath(cwd)) or cwd
+    dir_name = os.path.normpath(cwd)  # 完整路徑
     f_line1 = f"\033[2mdir:\033[0m\033[36m{dir_name}\033[0m" + (f"  {line1}" if line1 else "")
     
     star_5h = "*" if rem_5h < 1.0 else ""
