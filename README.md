@@ -2,17 +2,21 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
-A customizable Python statusline script for `antigravity-cli` (and Claude Code environments) that displays Git branch information, API rate limits, real-time spent costs, session duration, and active agent skills.
+A customizable Python statusline script for `antigravity-cli` (and Claude Code environments) that displays the current directory and Git branch, API rate limits, today's and this month's token usage, the current session's token usage, session duration, agent state, and active agent skills.
 
 ![Antigravity Statusline Demo](demo.png)
 
 ## Features
 
-- **Git Status**: Displays the current branch, dirty status (`*`), and ahead/behind commits.
+- **Directory & Git Status**: Displays the current directory name, the current branch, dirty status (`*`), and ahead/behind commits.
 - **Model-Aware Rate Limits**: Shows used quota percentages (`%`) and reset countdowns for 5-hour and Weekly limits with custom progress bars (consistent with Orca/Claude statusline, turning red when quota is exhausted).
   - Automatically adapts quotas based on the active model: Argon models (such as `Orchestrator (Argon)` or `Gemini 4 Argon`) do not have a 5-hour quota limit, so the 5h indicator is omitted and only `argon-wk` is displayed; standard `5h` and `wk` limits are shown for Gemini and 3P models.
-- **Cost Monitoring**: Shows today's and this month's cumulative API costs directly (no arbitrary limits).
+- **Usage Monitoring**: Shows today's and this month's token usage (`↑` input including cache, `↓` output) from `ccusage`, cached in the background. Hidden when `ccusage` is unavailable.
+- **Session Tokens**: Shows the current session's input (`↑`) and output (`↓`) tokens next to the context usage bar.
+- **Activity**: Shows the tool call count, artifact count, and step count from the session transcript.
+- **Session & Agent State**: Shows the session duration in minutes and the current agent state (e.g. `idle`, `working`).
 - **Active Skills**: Dynamically parses the session transcript to show the currently running skill (e.g. `write-yaochangyu-style`).
+- **Requirements for usage**: `today` / `month` need `ccusage` to be runnable with `npx --no-install ccusage`; without it they are hidden.
 - **ANSI Colors**: Consistent visual color schemes matching premium dark/gray themes.
 
 ## Prerequisites

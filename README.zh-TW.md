@@ -2,17 +2,21 @@
 
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
-這是一個適用於 `antigravity-cli`（及 Claude Code 環境）的自訂 Python 地位列 (Statusline) 腳本。它能即時顯示 Git 分支資訊、API 額度限制、當前累積花費、Session 持續時間以及執行中的 Agent 技能。
+這是一個適用於 `antigravity-cli`（及 Claude Code 環境）的自訂 Python 地位列 (Statusline) 腳本。它能即時顯示目前目錄與 Git 分支、API 額度限制、今日與本月的 token 用量、當前 Session 的 token 用量、Session 持續時間、Agent 狀態以及執行中的 Agent 技能。
 
 ![Antigravity Statusline 演示](demo.png)
 
 ## 功能特色
 
-- **Git 狀態**：顯示當前分支、變動狀態 (`*`)，以及領先/落後 (ahead/behind) 的 commit 數量。
+- **目錄與 Git 狀態**：顯示當前目錄名稱、分支、變動狀態 (`*`)，以及領先/落後 (ahead/behind) 的 commit 數量。
 - **智慧模型額度辨識**：以彩色進度條顯示 API 額度損耗使用量百分比（`%`）與重置倒數（與 Orca / Claude statusline 一致，額度用盡時轉為紅色警示）。
   - 自動依當前模型切換配額欄位：使用 Argon 模型（如 `Orchestrator (Argon)`、`Gemini 4 Argon`）時，因其無 5 小時配額限制，會自動隱藏 5h 項目並僅顯示每週額度 `argon-wk`；使用一般 Gemini 或第三方模型則顯示標準的 `5h` 與 `wk`。
-- **費用監控**：直接顯示今日與本月的 API 累計花費金額（不使用無謂的每日限制）。
+- **用量監控**：顯示今日與本月的 token 用量（`↑` 輸入含快取、`↓` 輸出），透過 `ccusage` 取得並在背景快取；`ccusage` 無法執行時隱藏。
+- **Session Token**：在 context 使用率旁顯示當前 Session 的輸入（`↑`）與輸出（`↓`）token。
+- **活動**：顯示工具呼叫數、Artifacts 數與步驟數（來自 Session 對話紀錄）。
+- **Session 與 Agent 狀態**：顯示 Session 持續的分鐘數，以及目前的 Agent 狀態（例如 `idle`、`working`）。
 - **真實技能偵測**：動態解析對話紀錄 (Transcript)，僅在載入真實技能（如 `write-yaochangyu-style`）時顯示。
+- **用量需求**：`today` / `month` 需要能以 `npx --no-install ccusage` 執行 ccusage，否則隱藏該欄位。
 - **自訂 ANSI 配色**：與 premium 暗色/灰色主題一致的精緻終端機配色。
 
 ## 系統需求與前置作業
